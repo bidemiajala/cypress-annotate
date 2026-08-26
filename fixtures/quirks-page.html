@@ -1,0 +1,32 @@
+<!--
+  Deliberately has NO doctype, so Chromium renders it in quirks mode. There,
+  document.documentElement.clientHeight reports the content height rather than
+  the viewport height — the trap that made the viewport sweep collapse to a
+  single pass on Hacker News. Targets are painted flat unique colours, same as
+  the main fixture, so the verifier can recover their true pixel footprint.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>Quirks mode fixture</title>
+<style>
+  body { margin: 0; padding: 40px; font-family: Arial, sans-serif; background: #eef1f4; }
+  h2 { font-size: 15px; color: #555; }
+  #quirks-top { width: 200px; height: 60px; background: #FF00E4; }
+  #quirks-mid { width: 240px; height: 70px; background: #00E5FF; margin-left: 120px; }
+  .spacer { height: 1500px; background: repeating-linear-gradient(
+      180deg, #e4e8ec 0 60px, #eef1f4 60px 120px); }
+</style>
+</head>
+<body>
+  <h2>Quirks mode — target A</h2>
+  <div id="quirks-top"></div>
+
+  <div class="spacer"></div>
+
+  <h2>Quirks mode — target B</h2>
+  <div id="quirks-mid"></div>
+
+  <div class="spacer"></div>
+</body>
+</html>

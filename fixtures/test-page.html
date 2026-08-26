@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Annotation coordinate fixture</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font: 15px/1.5 -apple-system, "Helvetica Neue", Arial, sans-serif;
+    background: #f4f5f7;
+    color: #1a1a1a;
+  }
+
+  /*
+    Every target is painted a flat, unique colour with no radius, shadow or
+    border, so the pixels it paints are exactly its border box. The verifier
+    scans the screenshot for that colour and compares the result against the
+    rect the pipeline computed.
+  */
+  .target { display: block; }
+
+  header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 64px;
+    background: #22252a;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 24px;
+    z-index: 10;
+  }
+  #target-fixed { width: 120px; height: 28px; background: #B400FF; }
+
+  main { padding: 100px 40px 60px; max-width: 900px; }
+  section { margin-bottom: 40px; }
+  h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .08em; color: #6b7280; }
+
+  #target-top { width: 220px; height: 56px; background: #FF00E4; }
+
+  .spacer { height: 1400px; background: repeating-linear-gradient(
+      180deg, #eceef1 0 60px, #f4f5f7 60px 120px); }
+
+  #target-below-fold { width: 180px; height: 90px; background: #00E5FF; margin-left: 96px; }
+
+  .scroller {
+    width: 420px; height: 200px; overflow-y: scroll;
+    border: 1px solid #d0d3d8; background: #fff; padding: 12px;
+  }
+  .scroller .filler { height: 300px; }
+  #target-in-scroller { width: 160px; height: 44px; background: #7CFF00; }
+
+  /* getBoundingClientRect reports the post-transform box; the paint follows it. */
+  #target-transformed {
+    width: 100px; height: 40px; background: #00FF3C;
+    transform: translateX(40px) scale(1.6);
+    transform-origin: top left;
+  }
+  .transform-room { height: 90px; }
+
+  iframe {
+    width: 460px; height: 180px;
+    border: 5px solid #333a44;
+    padding: 7px;
+    background: #fff;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <strong style="color:#fff">Fixture app</strong>
+  <div class="target" id="target-fixed"></div>
+</header>
+
+<main>
+  <section>
+    <h2>1 — Above the fold</h2>
+    <div class="target" id="target-top"></div>
+  </section>
+
+  <section>
+    <h2>2 — Transformed (translate + scale)</h2>
+    <div class="transform-room"><div class="target" id="target-transformed"></div></div>
+  </section>
+
+  <section>
+    <h2>3 — Inside a scrolled iframe container</h2>
+    <iframe id="checkout-frame" srcdoc="
+      &lt;style&gt;
+        body { margin:0; padding:20px; font:14px sans-serif; background:#fff; }
+        .filler { height: 120px; }
+        #target-iframe { width:150px; height:48px; background:#FF7A00; }
+      &lt;/style&gt;
+      &lt;div class='filler'&gt;Inside the iframe&lt;/div&gt;
+      &lt;div id='target-iframe'&gt;&lt;/div&gt;
+    "></iframe>
+  </section>
+
+  <section>
+    <h2>4 — Inside an internally scrolled container</h2>
+    <div class="scroller" id="scroller">
+      <div class="filler"></div>
+      <div class="target" id="target-in-scroller"></div>
+      <div class="filler"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>5 — Far below the fold</h2>
+    <div class="spacer"></div>
+    <div class="target" id="target-below-fold"></div>
+  </section>
+
+  <div class="spacer"></div>
+</main>
+
+<script>
+  // Fixed internal scroll offset so the container case is deterministic.
+  document.getElementById('scroller').scrollTop = 180;
+</script>
+</body>
+</html>
