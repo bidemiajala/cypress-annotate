@@ -10,6 +10,10 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./reasoner": {
+      "types": "./dist/claude-reasoner.d.ts",
+      "import": "./dist/claude-reasoner.js"
+    },
     "./cypress/*": {
       "types": "./dist/cypress/*.d.ts",
       "import": "./dist/cypress/*.js"

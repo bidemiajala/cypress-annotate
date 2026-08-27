@@ -13,14 +13,20 @@ export {
 export { measureElement, measureRegion, readPageMetrics } from './measure.js';
 export { buildOverlaySvg, compositeOverlay } from './draw.js';
 export { collectInventory, renderInventory, type InventoryItem } from './inventory.js';
+// ClaudeReasoner is not re-exported here — import it from 'ai-annotation/reasoner'
+// instead. It is the only piece of this package with a real (non-type-only)
+// dependency on @anthropic-ai/sdk; keeping it out of this barrel means every
+// other export here stays usable with neither the SDK nor a peer install of it.
 export {
-  ClaudeReasoner,
   findingsToAnnotations,
   gatherReasonerInput,
+  ReplayReasoner,
   SEVERITY_COLORS,
   type BugFinding,
   type Reasoner,
   type ReasonerInput,
+  type ResolvedFinding,
+  type ResolvedFindings,
   type Severity,
 } from './finder.js';
 export { runBugHunt, type BugHuntOptions, type BugHuntResult } from './pipeline.js';

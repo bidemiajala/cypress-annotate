@@ -11,13 +11,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
 import { chromium } from 'playwright';
 import { runBugHunt } from '../src/pipeline.js';
-import {
-  ClaudeReasoner,
-  type BugFinding,
-  type Reasoner,
-  type ReasonerInput,
-  type Severity,
-} from '../src/finder.js';
+import { type BugFinding, type Reasoner, type ReasonerInput, type Severity } from '../src/finder.js';
+import { ClaudeReasoner } from '../src/claude-reasoner.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const ENV_PATH = join(ROOT, '.env');

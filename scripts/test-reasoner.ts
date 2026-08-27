@@ -7,11 +7,8 @@
  */
 import assert from 'node:assert/strict';
 import Anthropic from '@anthropic-ai/sdk';
-import {
-  ClaudeReasoner,
-  findingsToAnnotations,
-  type BugFinding,
-} from '../src/finder.js';
+import { findingsToAnnotations, type BugFinding } from '../src/finder.js';
+import { ClaudeReasoner } from '../src/claude-reasoner.js';
 import type { InventoryItem } from '../src/inventory.js';
 
 let passed = 0;
