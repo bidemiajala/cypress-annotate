@@ -1,4 +1,4 @@
-# ai-annotation
+# cypress-annotate
 
 Claude looks at a page, says what's broken, and gets an annotated screenshot
 pointing at exactly the pixels it means.
@@ -31,12 +31,12 @@ npm run annotate -- --url https://example.com --selector 'a' --label 'Broken lin
 Not published to npm — install directly from the private GitHub repo:
 
 ```bash
-npm install github:bidemiajala/ai-annotation
-# or, pinned to a commit: github:bidemiajala/ai-annotation#e0f40dc
+npm install github:bidemiajala/cypress-annotate
+# or, pinned to a commit: github:bidemiajala/cypress-annotate#e0f40dc
 ```
 
 That needs read access to the repo (it's private) — either an SSH key on the
-installing machine that has access, or `npm install git+https://<token>@github.com/bidemiajala/ai-annotation.git`
+installing machine that has access, or `npm install git+https://<token>@github.com/bidemiajala/cypress-annotate.git`
 with a GitHub personal access token that has repo read scope.
 
 **The build runs automatically.** This repo ships TypeScript source, not
@@ -51,17 +51,17 @@ scratch project and importing both entry points, not assumed.
 // The core pipeline — playwright is a peer dependency, but only
 // captureAnnotated() actually needs it, loaded lazily on first call.
 // annotateImage/runBugHunt/findingsToAnnotations work with no browser installed.
-import { annotateImage, runBugHunt, captureAnnotated } from 'ai-annotation';
+import { annotateImage, runBugHunt, captureAnnotated } from 'cypress-annotate';
 
 // Claude-backed reasoning — needs @anthropic-ai/sdk. Deliberately not part of
 // the root import above: pulling it in from there would have forced the SDK
 // on every consumer, including ones who only want annotateImage.
-import { ClaudeReasoner } from 'ai-annotation/reasoner';
+import { ClaudeReasoner } from 'cypress-annotate/reasoner';
 
 // The Cypress plugin — needs neither playwright nor the Anthropic SDK.
-import { registerAnnotateTasks } from 'ai-annotation/cypress/task';
-import 'ai-annotation/cypress/commands';
-import { registerFailureCapture } from 'ai-annotation/cypress/failure-hook';
+import { registerAnnotateTasks } from 'cypress-annotate/cypress/task';
+import 'cypress-annotate/cypress/commands';
+import { registerFailureCapture } from 'cypress-annotate/cypress/failure-hook';
 ```
 
 `playwright`, `@anthropic-ai/sdk`, and `cypress` are all `peerDependencies`,
@@ -72,7 +72,7 @@ them. Install whichever ones your own usage actually calls into.
 This is confirmed, not assumed: the first attempt at this split missed a case
 — `ClaudeReasoner` originally lived in the same file as several
 Anthropic-free utility functions that the root barrel re-exports, so
-importing anything from `'ai-annotation'` at all (even `annotateImage`) threw
+importing anything from `'cypress-annotate'` at all (even `annotateImage`) threw
 `ERR_MODULE_NOT_FOUND` for `@anthropic-ai/sdk`, regardless of whether you
 touched `ClaudeReasoner`. Caught by installing the built package into an
 isolated scratch project with neither peer present and actually importing
@@ -262,14 +262,14 @@ the compositing has to happen in Node, via a task.
 
 ```ts
 // cypress.config.ts
-import { registerAnnotateTasks } from 'ai-annotation/cypress/task';
+import { registerAnnotateTasks } from 'cypress-annotate/cypress/task';
 
 export default defineConfig({
   e2e: { setupNodeEvents(on) { registerAnnotateTasks(on); } },
 });
 
 // cypress/support/e2e.ts
-import 'ai-annotation/cypress/commands';
+import 'cypress-annotate/cypress/commands';
 ```
 
 ```ts
@@ -292,7 +292,7 @@ don't need Claude at all. Register once:
 
 ```ts
 // cypress/support/e2e.ts
-import { registerFailureCapture } from 'ai-annotation/cypress/failure-hook';
+import { registerFailureCapture } from 'cypress-annotate/cypress/failure-hook';
 registerFailureCapture();
 ```
 

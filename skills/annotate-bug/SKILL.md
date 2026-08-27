@@ -19,7 +19,7 @@ Set `ANNOTATE_REPO` to wherever the tool is checked out (it needs
 `npm install` once):
 
 ```
-ANNOTATE_REPO=/path/to/ai-annotation
+ANNOTATE_REPO=/path/to/cypress-annotate
 ```
 
 ## The protocol

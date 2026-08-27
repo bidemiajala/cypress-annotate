@@ -1,7 +1,7 @@
 {
-  "name": "ai-annotation",
+  "name": "cypress-annotate",
   "version": "0.1.0",
-  "description": "Turn a CSS selector into an accurately annotated screenshot.",
+  "description": "Annotate Cypress screenshots and failed-test runs with pixel-accurate boxes, pointing at exactly what broke.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

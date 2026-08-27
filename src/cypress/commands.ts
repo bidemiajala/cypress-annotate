@@ -7,7 +7,7 @@ import type { AnnotationStyle, ShapeKind } from '../types.js';
 /**
  * Registers cy.annotate(). Import once from cypress/support/e2e.ts:
  *
- *   import 'ai-annotation/cypress/commands';
+ *   import 'cypress-annotate/cypress/commands';
  *
  * The command exists mainly to enforce an ordering that is easy to get wrong by
  * hand: scroll, then measure, then screenshot, with nothing in between. Every
