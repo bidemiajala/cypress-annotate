@@ -274,6 +274,27 @@ npm run explain-failures                          # scans failures.json, costs A
 npm run explain-failures -- --replay recorded.json # no API call, for testing
 ```
 
+### Cypress Cloud
+
+**Confirmed working**, not just expected to: a `cy.screenshot()` call taken from
+an `afterEach` hook, then overwritten in place with the annotation before the
+run ends, is picked up by `cypress run --record` and uploaded as a normal
+`Screenshot` cloud artifact — the same category label and pipeline as any other
+Cypress screenshot. Verified against a real project with `--record`; the
+uploaded image showed the box.
+
+That confirmation replaced an earlier, more "obviously safe"-looking design:
+overwriting Cypress's own *automatic* on-failure screenshot in place instead of
+taking a second one, on the theory that mutating the file Cypress itself
+already tracks removes all doubt. It doesn't work — that automatic screenshot
+turned out to include the full Runner UI (command log sidebar, browser
+toolbar, the app rendered at some auto-computed zoom, not a 1:1 capture), so
+there's no reliable coordinate math to draw a box on it at all. The
+`cy.screenshot({capture: 'viewport'})` this hook actually takes is a clean,
+predictable capture — the same one every alignment test in this repo is
+verified against — and per the `--record` result above, uploading it is not a
+trade-off against Cloud compatibility.
+
 This only touches the failures the deterministic pass couldn't resolve — it
 never runs automatically during `cypress run`. That split is deliberate: every
 CI run captures data for free; nothing calls Claude, spends money, or needs

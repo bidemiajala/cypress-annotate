@@ -14,6 +14,7 @@ import {
 import type { PixelRect } from './src/types.js';
 
 export default defineConfig({
+  projectId: 'qeshtt',
   viewportWidth: 1280,
   // Matches the headless Electron window, so the capture is not clipped.
   viewportHeight: 720,
