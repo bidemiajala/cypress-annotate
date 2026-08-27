@@ -1,6 +1,6 @@
 {
   "name": "cypress-annotate",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Annotate Cypress screenshots and failed-test runs with pixel-accurate boxes, pointing at exactly what broke.",
   "keywords": [
     "cypress",
