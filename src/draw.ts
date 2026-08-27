@@ -60,7 +60,7 @@ function boxShape(rect: PixelRect, style: ResolvedStyle): string {
     `width="${round(Math.max(0, rect.width - style.strokeWidth))}" ` +
     `height="${round(Math.max(0, rect.height - style.strokeWidth))}" ` +
     `rx="${round(style.radius)}" fill="none" ` +
-    `stroke="${style.color}" stroke-width="${round(style.strokeWidth)}" />`
+    `stroke="${escapeXml(style.color)}" stroke-width="${round(style.strokeWidth)}" />`
   );
 }
 
@@ -72,7 +72,7 @@ function circleShape(rect: PixelRect, style: ResolvedStyle): string {
   const ry = (rect.height / 2) * Math.SQRT2;
   return (
     `<ellipse cx="${round(cx)}" cy="${round(cy)}" rx="${round(rx)}" ry="${round(ry)}" ` +
-    `fill="none" stroke="${style.color}" stroke-width="${round(style.strokeWidth)}" />`
+    `fill="none" stroke="${escapeXml(style.color)}" stroke-width="${round(style.strokeWidth)}" />`
   );
 }
 
@@ -113,10 +113,10 @@ function arrowShape(
   return {
     svg:
       `<line x1="${round(tailX)}" y1="${round(tailY)}" x2="${round(tipX - Math.cos(angle) * head * 0.6)}" ` +
-      `y2="${round(anchorY - Math.sin(angle) * head * 0.6)}" stroke="${style.color}" ` +
+      `y2="${round(anchorY - Math.sin(angle) * head * 0.6)}" stroke="${escapeXml(style.color)}" ` +
       `stroke-width="${round(style.strokeWidth)}" stroke-linecap="round" />` +
       `<polygon points="${round(tipX)},${round(anchorY)} ${round(p1x)},${round(p1y)} ${round(p2x)},${round(p2y)}" ` +
-      `fill="${style.color}" />`,
+      `fill="${escapeXml(style.color)}" />`,
     tail: { x: tailX, y: tailY },
   };
 }
@@ -162,9 +162,9 @@ function labelShape(
 
   return (
     `<rect x="${round(pillX)}" y="${round(pillY)}" width="${round(pillWidth)}" height="${round(pillHeight)}" ` +
-    `rx="${round(Math.min(pillHeight / 2, fontSize * 0.5))}" fill="${style.color}" />` +
+    `rx="${round(Math.min(pillHeight / 2, fontSize * 0.5))}" fill="${escapeXml(style.color)}" />` +
     `<text font-family="${FONT_STACK}" font-size="${round(fontSize)}" font-weight="600" ` +
-    `fill="${style.labelColor}" xml:space="preserve">${tspans}</text>`
+    `fill="${escapeXml(style.labelColor)}" xml:space="preserve">${tspans}</text>`
   );
 }
 

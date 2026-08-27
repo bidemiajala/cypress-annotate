@@ -33,6 +33,7 @@
     "annotate-shot": "tsx scripts/annotate-shot.ts",
     "test:reasoner": "tsx scripts/test-reasoner.ts",
     "test:failure-selector": "tsx scripts/test-failure-selector.ts",
+    "test:svg-escaping": "tsx scripts/test-svg-escaping.ts",
     "test:cypress": "tsx scripts/run-cypress.ts run --e2e --spec cypress/e2e/annotate.cy.ts",
     "test:cypress-failures": "tsx scripts/test-cypress-failures.ts",
     "explain-failures": "tsx scripts/explain-failures.ts",
@@ -42,7 +43,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "sharp": "^0.34.4"
+    "sharp": "^0.35.4"
   },
   "peerDependencies": {
     "@anthropic-ai/sdk": "^0.120.0",
@@ -50,9 +51,15 @@
     "playwright": "^1.56.1"
   },
   "peerDependenciesMeta": {
-    "@anthropic-ai/sdk": { "optional": true },
-    "cypress": { "optional": true },
-    "playwright": { "optional": true }
+    "@anthropic-ai/sdk": {
+      "optional": true
+    },
+    "cypress": {
+      "optional": true
+    },
+    "playwright": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.120.0",
