@@ -42,6 +42,90 @@ export function readMetrics(win: Window): PageMetrics {
   };
 }
 
+const REF_ATTR = 'data-annot-ref';
+const INTERACTIVE = new Set(['a', 'button', 'input', 'select', 'textarea', 'label', 'summary', 'option']);
+const STRUCTURAL = new Set(['header', 'nav', 'main', 'footer', 'aside', 'form', 'table', 'img', 'svg', 'video', 'dialog']);
+const HEADING = /^h[1-6]$/;
+
+export interface InventoryItem {
+  ref: string;
+  tag: string;
+  name: string;
+  rect: { x: number; y: number; width: number; height: number };
+}
+
+function accessibleName(el: Element): string {
+  const aria = el.getAttribute('aria-label');
+  if (aria) return aria.trim();
+  const alt = el.getAttribute('alt');
+  if (alt) return alt.trim();
+  const placeholder = el.getAttribute('placeholder');
+  if (placeholder) return `placeholder: ${placeholder.trim()}`;
+  if (el.tagName === 'INPUT' && (el as HTMLInputElement).value) {
+    return `value: ${(el as HTMLInputElement).value.trim()}`;
+  }
+  return (el.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 80);
+}
+
+function isTextLeaf(el: Element): boolean {
+  if (!(el.textContent ?? '').trim()) return false;
+  for (const child of Array.from(el.children)) {
+    if ((child.textContent ?? '').trim()) return false;
+  }
+  return true;
+}
+
+/**
+ * Collect elements worth showing to Claude, for the case where no single
+ * selector could be recovered from the failure. Same "interesting element"
+ * heuristic as src/browser/collect-elements.js (the MCP-facing version), but
+ * written directly against `Window` rather than serialized as a string: in
+ * Cypress there is no eval boundary to cross, so there is nothing to duplicate
+ * that trick for.
+ */
+export function collectInventory(win: Window, limit = 120): InventoryItem[] {
+  const doc = win.document;
+  const items: InventoryItem[] = [];
+  let counter = 0;
+
+  for (const el of Array.from(doc.querySelectorAll('*'))) {
+    if (items.length >= limit) break;
+    const tag = el.tagName.toLowerCase();
+    if (tag === 'script' || tag === 'style' || tag === 'meta' || tag === 'link') continue;
+
+    const style = win.getComputedStyle(el);
+    if (style.visibility === 'hidden' || style.display === 'none') continue;
+    if (parseFloat(style.opacity) < 0.05) continue;
+
+    const rect = el.getBoundingClientRect();
+    if (rect.width < 8 || rect.height < 8) continue;
+
+    const interesting =
+      INTERACTIVE.has(tag) ||
+      STRUCTURAL.has(tag) ||
+      HEADING.test(tag) ||
+      el.hasAttribute('role') ||
+      el.hasAttribute('id') ||
+      isTextLeaf(el);
+    if (!interesting) continue;
+
+    const ref = `e${++counter}`;
+    el.setAttribute(REF_ATTR, ref);
+    items.push({
+      ref,
+      tag,
+      name: accessibleName(el),
+      rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+    });
+  }
+
+  return items;
+}
+
+export function refSelector(ref: string): string {
+  return `[${REF_ATTR}="${ref}"]`;
+}
+
 export function measureTargets(win: Window, selectors: string[]): DomMeasurement {
   const metrics = readMetrics(win);
 

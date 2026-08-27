@@ -2,6 +2,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { annotateImage, type MeasuredTarget } from '../annotate-image.js';
 import type { AnnotationStyle, PixelRect, ShapeKind } from '../types.js';
 import type { DomMeasurement } from './measure-dom.js';
+import { appendFailureRecord, type FailureRecord } from './failure-report.js';
 
 /**
  * The Node half of the Cypress plugin.
@@ -120,5 +121,7 @@ export function registerAnnotateTasks(on: CypressPluginOn): void {
     annotateScreenshot: ((args: AnnotateTaskArgs) => annotateScreenshot(args)) as unknown as (
       arg: never,
     ) => unknown,
+    appendFailureRecord: ((args: { reportPath: string; record: FailureRecord }) =>
+      appendFailureRecord(args)) as unknown as (arg: never) => unknown,
   });
 }

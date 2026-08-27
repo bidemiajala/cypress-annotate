@@ -19,6 +19,8 @@ npm run verify          # step 1: alignment suite, 20 cases
 npm run verify:image    # step 4: driver-agnostic alignment, 10 cases
 npm run test:reasoner   # step 2: request/parse suite, 12 cases, no API key needed
 npm run test:cypress    # cypress plugin, 7 cases, real Cypress 15
+npm run test:failure-selector  # failed-test selector recovery, 12 cases, no browser
+npm run test:cypress-failures  # failed-test capture end-to-end, 4 cases, real Cypress 15
 npm run demo            # end-to-end on the buggy fixture, using recorded findings
 
 npm run annotate -- --url https://example.com --selector 'a' --label 'Broken link'
@@ -228,6 +230,67 @@ lands in your reports and CI artifacts. It yields the result — `drawnRects`,
 `scale`, `warnings` — so tests can assert on it.
 
 Run this repo's suite with `npm run test:cypress` (7 cases, real Cypress 15).
+
+### Annotating failed test runs
+
+For "the wrong text showed" and similar assertion failures, most of the time you
+don't need Claude at all. Register once:
+
+```ts
+// cypress/support/e2e.ts
+import { registerFailureCapture } from 'ai-annotation/cypress/failure-hook';
+registerFailureCapture();
+```
+
+```ts
+// cypress.config.ts — required, so this hook's screenshot isn't racing
+// Cypress's own automatic one
+export default defineConfig({ screenshotOnRunFailure: false, ... });
+```
+
+On every failed test it recovers the selector the failing command was targeting
+— `cy.state('current')`'s own args when available, chai-jquery's `<tag#id>`
+rendering in the error message as fallback — measures that element live while
+the page is still in its failed state, scrolls it into view if needed, and
+draws a box labelled from the assertion's own values:
+
+> Expected "THIS WILL NOT MATCH" but got "£244.99"
+
+That label is built entirely from `err.expected`/`err.actual`
+(chai-quote-unwrapped — see below), with **zero LLM calls**. It writes one
+record per failure to `out/cypress/failures.json` (path configurable):
+selector, source, expected/actual, the annotated image path, and warnings.
+
+**When no selector can be recovered** — an existence check, a `cy.contains()`
+chain, a generic page-state assertion — there's nothing to box
+deterministically. Those failures still get captured for free: a plain
+screenshot plus a live inventory of candidate elements (same shape as the MCP
+skill's), because a screenshot alone carries no DOM information and the browser
+session will be gone by the time anyone looks at this. Calling Claude on them is
+a separate, explicit step:
+
+```bash
+npm run explain-failures                          # scans failures.json, costs API calls
+npm run explain-failures -- --replay recorded.json # no API call, for testing
+```
+
+This only touches the failures the deterministic pass couldn't resolve — it
+never runs automatically during `cypress run`. That split is deliberate: every
+CI run captures data for free; nothing calls Claude, spends money, or needs
+`ANTHROPIC_API_KEY` available to the test job unless a human (or a separate CI
+step) explicitly asks for the explanation. Run `npm run test:cypress-failures`
+to see all four cases (resolved via command state, resolved via message
+fallback, unresolved-with-inventory, fully unrecoverable) captured for real, and
+`npm run test:failure-selector` for the pure selector-recovery logic (12 cases,
+no browser).
+
+**A pitfall worth knowing if you write your own chai assertions against
+`err.expected`/`err.actual`:** they are chai's own quoted rendering of the
+value, not the raw value — `.should('have.text', 'X')` puts the five-character
+string `'X'` (with the quote marks) in `err.expected`, not `X`. This was wrong
+in an early version of this feature, confirmed and fixed by running a real
+Cypress failure and inspecting the actual field rather than trusting the
+assumption.
 
 **Three Cypress-specific traps, all handled:**
 

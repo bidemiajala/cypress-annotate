@@ -19,6 +19,11 @@ export default defineConfig({
   viewportHeight: 720,
   video: false,
   screenshotsFolder: 'out/cypress/screenshots',
+  // The failure-capture hook takes its own screenshot immediately after
+  // measuring the DOM, guaranteeing nothing changes between the two. Leaving
+  // Cypress's automatic one on would race it and make it ambiguous which
+  // screenshot the measurement actually corresponds to.
+  screenshotOnRunFailure: false,
   fixturesFolder: false,
   e2e: {
     supportFile: 'cypress/support/e2e.ts',

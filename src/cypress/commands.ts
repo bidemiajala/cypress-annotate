@@ -1,5 +1,6 @@
 /// <reference types="cypress" />
 import { measureTargets, type DomMeasurement } from './measure-dom.js';
+import { isFullyVisible, scrollIntoViewIfNeeded } from './scroll-into-view.js';
 import type { AnnotateTaskResult } from './task.js';
 import type { AnnotationStyle, ShapeKind } from '../types.js';
 
@@ -41,18 +42,6 @@ export interface AnnotateCommandOptions {
   fullPage?: boolean;
 }
 
-function isFullyVisible(
-  rect: { x: number; y: number; width: number; height: number },
-  win: Window,
-): boolean {
-  return (
-    rect.y >= 0 &&
-    rect.x >= 0 &&
-    rect.y + rect.height <= win.innerHeight &&
-    rect.x + rect.width <= win.innerWidth
-  );
-}
-
 function slugify(text: string): string {
   return text.replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'annotated';
 }
@@ -86,10 +75,7 @@ Cypress.Commands.add(
 
         if (!needsScroll) return cy.wrap(initial, { log: false });
 
-        return cy
-          .get(selectors[0] as string, { log: false })
-          .first()
-          .scrollIntoView({ log: false, offset: { top: -(options.scrollOffset ?? 120), left: 0 } })
+        return scrollIntoViewIfNeeded(selectors[0] as string, options.scrollOffset ?? 120)
           // Re-measure: the rects from before the scroll are now meaningless.
           .then(() => cy.window({ log: false }).then((w) => measureTargets(w, selectors)));
       })
