@@ -45,15 +45,20 @@ small asset-copy step) runs on install for exactly this case: a package
 installed as a git dependency. Confirmed by actually installing it into a
 scratch project and importing both entry points, not assumed.
 
-**Two independent entry points, so a Cypress-only install stays light:**
+**Three independent entry points, so installing one doesn't drag in the others:**
 
 ```ts
-// The core pipeline — needs playwright as a peer dependency
+// The core pipeline — playwright is a peer dependency, but only
+// captureAnnotated() actually needs it, loaded lazily on first call.
+// annotateImage/runBugHunt/findingsToAnnotations work with no browser installed.
 import { annotateImage, runBugHunt, captureAnnotated } from 'ai-annotation';
 
+// Claude-backed reasoning — needs @anthropic-ai/sdk. Deliberately not part of
+// the root import above: pulling it in from there would have forced the SDK
+// on every consumer, including ones who only want annotateImage.
+import { ClaudeReasoner } from 'ai-annotation/reasoner';
+
 // The Cypress plugin — needs neither playwright nor the Anthropic SDK.
-// Confirmed by grepping the import graph and by installing with neither
-// present: this subpath loads and runs.
 import { registerAnnotateTasks } from 'ai-annotation/cypress/task';
 import 'ai-annotation/cypress/commands';
 import { registerFailureCapture } from 'ai-annotation/cypress/failure-hook';
@@ -61,8 +66,19 @@ import { registerFailureCapture } from 'ai-annotation/cypress/failure-hook';
 
 `playwright`, `@anthropic-ai/sdk`, and `cypress` are all `peerDependencies`,
 marked optional — npm won't install any of them for you, and won't warn
-loudly if you skip them, as long as you only use the entry point that doesn't
-need them. Install whichever ones your own usage actually calls into.
+loudly if you skip them, as long as you only use entry points that don't need
+them. Install whichever ones your own usage actually calls into.
+
+This is confirmed, not assumed: the first attempt at this split missed a case
+— `ClaudeReasoner` originally lived in the same file as several
+Anthropic-free utility functions that the root barrel re-exports, so
+importing anything from `'ai-annotation'` at all (even `annotateImage`) threw
+`ERR_MODULE_NOT_FOUND` for `@anthropic-ai/sdk`, regardless of whether you
+touched `ClaudeReasoner`. Caught by installing the built package into an
+isolated scratch project with neither peer present and actually importing
+each entry point — not by reading the code — since ES module imports
+evaluate a whole file's top-level code as soon as anything is imported from
+it, peer-optional or not.
 
 ## The coordinate rules
 
