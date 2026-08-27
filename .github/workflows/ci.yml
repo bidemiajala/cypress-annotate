@@ -1,0 +1,202 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Everything that needs no browser. Fast, and covers both supported Node
+  # majors, since package.json declares node >=20.
+  check:
+    name: typecheck + unit (node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['20', '22']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm run test:failure-selector
+      - run: npm run test:svg-escaping
+      - run: npm run test:reasoner
+
+  # The Cypress plugin against a real Cypress run. Pinned to 22.04 because
+  # Cypress's Electron needs libasound2, which 24.04 renamed to libasound2t64.
+  cypress:
+    name: cypress plugin
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install Cypress system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgtk2.0-0 libgtk-3-0 libgbm-dev libnotify-dev libnss3 \
+            libxss1 libasound2 libxtst6 xauth xvfb
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/Cypress
+          key: cypress-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - run: npm ci
+      - run: npx cypress install
+      - run: npm run test:cypress
+      - run: npm run test:cypress-failures
+      - name: Upload screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-output
+          path: |
+            cypress/screenshots
+            out/cypress
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # The alignment suites and the replayed reasoning demo. These drive a real
+  # headless Chromium, so they need Playwright's browser binaries.
+  pipeline:
+    name: alignment + pipeline
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - run: npx playwright install --with-deps chromium
+      - run: npm run verify
+      - run: npm run verify:image
+      - run: npm run demo
+      - name: Upload alignment output on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: alignment-output
+          path: out
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # Regression test for the entry-point split. Packs the tarball, installs it
+  # into an empty project with no optional peers present, and imports each
+  # entry point for real. This is the exact bug that shipped once: ClaudeReasoner
+  # sharing a file with re-exported utilities meant importing anything at all
+  # from the root threw ERR_MODULE_NOT_FOUND for the Anthropic SDK. Reading the
+  # code does not catch it, because an ES module evaluates a whole file's
+  # top-level code the moment anything is imported from it.
+  package:
+    name: package install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Pack
+        run: |
+          mkdir -p /tmp/pkg
+          npm pack --pack-destination /tmp/pkg
+      - name: Install into an empty project with no peers
+        working-directory: /tmp/pkg
+        run: |
+          npm init -y > /dev/null
+          npm pkg set type=module > /dev/null
+          npm install ./cypress-annotate-*.tgz
+          echo "--- installed packages ---"
+          ls node_modules | grep -v '^\.'
+          for forbidden in playwright cypress @anthropic-ai; do
+            if [ -e "node_modules/$forbidden" ]; then
+              echo "FAIL: optional peer '$forbidden' was installed but should not have been"
+              exit 1
+            fi
+          done
+      - name: Import each entry point
+        working-directory: /tmp/pkg
+        run: |
+          node --input-type=module -e '
+            const clean = [
+              "cypress-annotate",
+              "cypress-annotate/cypress/task",
+              "cypress-annotate/cypress/failure-hook",
+            ];
+            for (const spec of clean) {
+              const mod = await import(spec);
+              if (Object.keys(mod).length === 0) {
+                console.error(`FAIL ${spec} imported but exported nothing`);
+                process.exit(1);
+              }
+              console.log(`ok   ${spec} (${Object.keys(mod).length} exports)`);
+            }
+
+            // The reasoner is the one entry point that legitimately needs a peer.
+            // It must fail for that reason and no other.
+            try {
+              await import("cypress-annotate/reasoner");
+              console.error("FAIL cypress-annotate/reasoner imported without @anthropic-ai/sdk installed");
+              process.exit(1);
+            } catch (err) {
+              if (err.code !== "ERR_MODULE_NOT_FOUND") {
+                console.error(`FAIL reasoner threw ${err.code} instead of ERR_MODULE_NOT_FOUND`);
+                throw err;
+              }
+              console.log("ok   cypress-annotate/reasoner fails with ERR_MODULE_NOT_FOUND, as designed");
+            }
+          '
+
+  audit:
+    name: audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm audit --audit-level=high
+
+  # Repo style guard. The one exemption is the element-inventory line that
+  # inventory.ts builds, both where it is built and where the docs quote it.
+  # That separator goes into the model's prompt, so it is behaviour rather than
+  # formatting.
+  prose:
+    name: prose guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: No em dashes or en dashes
+        run: |
+          if grep -rn $'[–—]' \
+              --include='*.ts' --include='*.js' --include='*.md' \
+              --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=out \
+              . \
+              | grep -v 'src/inventory.ts:144' \
+              | grep -vE ':\[e[0-9]+\] <'; then
+            echo
+            echo "Found an em dash or en dash. Use a spaced hyphen, a comma, or parentheses."
+            exit 1
+          fi
+          echo "ok, none found"
