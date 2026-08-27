@@ -116,7 +116,9 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Pack
-        run: npm pack --pack-destination /tmp/pkg
+        run: |
+          mkdir -p /tmp/pkg
+          npm pack --pack-destination /tmp/pkg
       - name: Install into an empty project with no peers
         working-directory: /tmp/pkg
         run: |
