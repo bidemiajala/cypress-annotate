@@ -1,28 +1,38 @@
 # cypress-annotate
 
-Claude looks at a page, says what's broken, and gets an annotated screenshot
-pointing at exactly the pixels it means.
+A Cypress plugin that draws a pixel-accurate box on exactly what's wrong in a
+screenshot — either on demand with `cy.annotate()`, or automatically on every
+failed test, labelled from the assertion's own expected/actual values, no AI
+involved. See [Cypress plugin](#cypress-plugin) to get started; that's the
+primary thing this package is for.
 
-- **Step 1 — the annotation pipeline.** Selector in, accurately boxed screenshot
-  out. Coordinate maths verified against painted pixels.
-- **Step 2 — the reasoning step.** Claude examines the page and returns
-  structured findings; the selectors it names are guaranteed to resolve.
-- **Step 4 — agent integration.** A driver-agnostic path that annotates a
-  screenshot captured by whichever browser MCP is connected, with no browser of
-  its own. See [Using this from a live agent session](#using-this-from-a-live-agent-session).
+The same coordinate engine also powers two things this package includes but
+does **not** require: a general Playwright-driven annotation pipeline, and a
+Claude-based reasoning layer that can look at a page and decide *what's*
+wrong, not just draw the box once you already know. Neither is on the
+critical path for the Cypress plugin — see
+[Installing this as a package](#installing-this-as-a-package-in-another-project)
+for how the three pieces stay independent.
+
+**Using just the Cypress plugin? You need none of this — skip straight to
+[Cypress plugin](#cypress-plugin).** Playwright and the Claude SDK are
+optional peer dependencies, only needed by the other two pieces.
 
 ```bash
+# Cypress plugin only — no Playwright, no Claude SDK, no browser download.
 npm install
+npm run test:cypress            # cypress plugin, 7 cases, real Cypress 15
+npm run test:failure-selector   # failed-test selector recovery, 12 cases, no browser
+npm run test:cypress-failures   # failed-test capture end-to-end, 4 cases, real Cypress 15
+
+# The rest of this repo's own dev/test suite additionally needs Playwright's
+# browser binaries and exercises the general pipeline + agent-integration path:
 npx playwright install chromium
-
-npm run verify          # step 1: alignment suite, 20 cases
-npm run verify:image    # step 4: driver-agnostic alignment, 10 cases
-npm run test:reasoner   # step 2: request/parse suite, 12 cases, no API key needed
-npm run test:cypress    # cypress plugin, 7 cases, real Cypress 15
-npm run test:failure-selector  # failed-test selector recovery, 12 cases, no browser
-npm run test:cypress-failures  # failed-test capture end-to-end, 4 cases, real Cypress 15
-npm run demo            # end-to-end on the buggy fixture, using recorded findings
-
+npm run verify           # coordinate-pipeline alignment suite, 20 cases
+npm run verify:image     # driver-agnostic (MCP) alignment suite, 10 cases
+npm run test:reasoner    # Claude reasoning request/parse suite, 12 cases, no API key needed
+npm run test:svg-escaping  # SVG injection regression suite, 5 cases
+npm run demo              # end-to-end on the buggy fixture, using recorded findings
 npm run annotate -- --url https://example.com --selector 'a' --label 'Broken link'
 ```
 
