@@ -5,12 +5,26 @@
   "keywords": [
     "cypress",
     "cypress-plugin",
+    "cypress-screenshot",
     "screenshot",
+    "annotate",
     "annotation",
-    "testing",
+    "test-failure",
+    "failed-test",
+    "debugging",
+    "e2e",
+    "e2e-testing",
+    "visual-testing",
+    "test-reporting",
+    "ci",
+    "cypress-cloud",
+    "bounding-box",
+    "pixel-accurate",
     "playwright",
+    "ai",
+    "llm",
     "claude",
-    "visual-testing"
+    "agent"
   ],
   "license": "MIT",
   "author": "bidemiajala",
@@ -45,7 +59,9 @@
   "files": [
     "dist",
     "src/browser",
+    "skills",
     "DOCS",
+    "AGENTS.md",
     "README.md",
     "LICENSE"
   ],

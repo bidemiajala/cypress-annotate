@@ -13,7 +13,7 @@ else to configure.
 ### 1. Install
 
 ```bash
-npm install github:bidemiajala/cypress-annotate
+npm install --save-dev cypress-annotate
 ```
 
 ### 2. Register the Node task
@@ -200,6 +200,19 @@ nothing in Cloud compatibility.
 Nothing in this path calls Claude, spends money, or needs `ANTHROPIC_API_KEY`
 available to the test job. Every CI run captures its data for free.
 
+## Using this with an AI coding agent
+
+The package ships a skill file at `skills/cypress-annotate/SKILL.md` covering the
+setup, every option, and the traps worth knowing. For Claude Code, copy it into
+your project:
+
+```bash
+cp node_modules/cypress-annotate/skills/cypress-annotate/SKILL.md \
+   .claude/skills/cypress-annotate/SKILL.md
+```
+
+Agents working inside this repo should read [AGENTS.md](AGENTS.md) instead.
+
 ## Things that will bite you
 
 **A pitfall if you write your own chai assertions against `err.expected` and
@@ -309,18 +322,13 @@ npm run typecheck
 The alignment suite in the section above drives a headless browser directly, so
 it needs a little more setup. [DOCS/pipeline.md](DOCS/pipeline.md) covers it.
 
-### Installing from the private repo
+### Publishing and packaging
 
-That install command needs read access, since the repo is private. Either an SSH
-key on the installing machine that has access, or
-`npm install git+https://<token>@github.com/bidemiajala/cypress-annotate.git`
-with a GitHub personal access token that has repo read scope.
-
-**The build runs automatically.** This repo ships TypeScript source and `dist/`
-is gitignored, so npm's `prepare` script (`tsc` plus a small asset-copy step)
-runs on install for exactly this case, a package installed as a git dependency.
-Confirmed by installing it into a scratch project and importing both entry
-points. To pin a commit: `github:bidemiajala/cypress-annotate#e0f40dc`.
+**The build runs automatically on install.** This repo ships TypeScript source
+and `dist/` is gitignored, so npm's `prepare` script (`tsc` plus a small
+asset-copy step) runs on install. Confirmed by installing the packed tarball into
+an empty project and importing each entry point, which is also what the
+`package install` CI job does on every run.
 
 Every peer dependency is marked optional, so npm installs none of them for you
 and stays quiet about it, as long as you only use entry points that don't need
@@ -334,7 +342,7 @@ whether or not you ever touched the reasoner. Reading the code would never have
 shown it, because an ES module evaluates a whole file's top-level code the moment
 anything is imported from it, peer-optional or otherwise. What caught it was
 installing the built package into an isolated scratch project with no peers
-present and importing each entry point for real.
+present and importing each entry point for real. CI now does that on every push.
 
 ## Known limits
 
