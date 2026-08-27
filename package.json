@@ -1,6 +1,6 @@
 {
   "name": "cypress-annotate",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Annotate Cypress screenshots and failed-test runs with pixel-accurate boxes, pointing at exactly what broke.",
   "keywords": [
     "cypress",
@@ -37,7 +37,7 @@
   },
   "homepage": "https://github.com/bidemiajala/cypress-annotate#readme",
   "engines": {
-    "node": ">=20"
+    "node": "^20.19.0 || >=22.12.0"
   },
   "type": "module",
   "main": "dist/index.js",
@@ -45,15 +45,21 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./reasoner": {
       "types": "./dist/claude-reasoner.d.ts",
-      "import": "./dist/claude-reasoner.js"
+      "import": "./dist/claude-reasoner.js",
+      "require": "./dist/claude-reasoner.js",
+      "default": "./dist/claude-reasoner.js"
     },
     "./cypress/*": {
       "types": "./dist/cypress/*.d.ts",
-      "import": "./dist/cypress/*.js"
+      "import": "./dist/cypress/*.js",
+      "require": "./dist/cypress/*.js",
+      "default": "./dist/cypress/*.js"
     }
   },
   "files": [
