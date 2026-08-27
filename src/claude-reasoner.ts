@@ -7,7 +7,7 @@ import type { Region } from './types.js';
  * Split out from finder.ts on purpose: this is the only file in the package
  * with a real (non-type-only) import of `@anthropic-ai/sdk`. finder.ts's other
  * exports (findingsToAnnotations, gatherReasonerInput, ReplayReasoner, ...) do
- * not need the SDK at all, and index.ts re-exports them from its root barrel —
+ * not need the SDK at all, and index.ts re-exports them from its root barrel -
  * if ClaudeReasoner lived in the same file, importing anything from that
  * barrel would eagerly load the SDK too, since ES module imports evaluate the
  * whole file regardless of which export you asked for. Caught by actually
@@ -80,12 +80,12 @@ Do not report subjective styling preferences, and do not invent defects. If the
 page looks correct, return an empty findings array.
 
 For each finding, set "ref" to the handle of the single element the annotation
-should point at — the element that is wrong, not its container, and not the
+should point at - the element that is wrong, not its container, and not the
 element it collides with. The bounding boxes in the element list are the best
 evidence for geometric bugs: overlapping boxes, boxes extending past a parent,
 and boxes with a zero or negative gap are all visible in the numbers.
 
-Only set "ref" to null when no listed element corresponds to the problem — for
+Only set "ref" to null when no listed element corresponds to the problem - for
 example whitespace where something should be. In that case fill in "region"
 with the area to box, as percentages of the viewport.
 

@@ -1,6 +1,6 @@
 /// <reference types="cypress" />
 
-/** Fully on-screen, not merely intersecting — the bar cy.annotate() and the failure hook both use. */
+/** Fully on-screen, not merely intersecting - the bar cy.annotate() and the failure hook both use. */
 export function isFullyVisible(
   rect: { x: number; y: number; width: number; height: number },
   win: Window,

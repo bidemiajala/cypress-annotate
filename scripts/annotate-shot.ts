@@ -3,8 +3,8 @@
  *
  * This is the driver-agnostic entry point: it never opens a browser. Give it a
  * PNG and the measurement JSON produced by src/browser/measure-target.js, and it
- * draws the boxes. Whatever took the screenshot — Playwright MCP, Chrome
- * DevTools MCP, Cypress, a human with a screenshot key — is irrelevant here.
+ * draws the boxes. Whatever took the screenshot - Playwright MCP, Chrome
+ * DevTools MCP, Cypress, a human with a screenshot key - is irrelevant here.
  */
 import { readFile, writeFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
@@ -69,7 +69,7 @@ interface MeasuredPayload {
 }
 
 /**
- * MCP servers differ in how they wrap an evaluate result — some write the value
+ * MCP servers differ in how they wrap an evaluate result - some write the value
  * itself, others nest it under `result`. Accept either rather than making the
  * caller unwrap it.
  */
@@ -88,7 +88,7 @@ function unwrap(raw: unknown): MeasuredPayload {
   const payload = value as MeasuredPayload;
   if (!payload?.metrics || !Array.isArray(payload.targets)) {
     throw new Error(
-      'Measurement JSON has no { metrics, targets } — is it the output of measure-target.js?',
+      'Measurement JSON has no { metrics, targets } - is it the output of measure-target.js?',
     );
   }
   return payload;
@@ -145,7 +145,7 @@ if (values.region.length > 0) {
   const height = meta.height ?? 0;
 
   // Percentages are resolved against the image itself here, so this path works
-  // even with no page metrics at all — the pixel-only fallback.
+  // even with no page metrics at all - the pixel-only fallback.
   if (metrics.viewportWidth === 0) {
     metrics = { ...metrics, viewportWidth: width, viewportHeight: height };
   }

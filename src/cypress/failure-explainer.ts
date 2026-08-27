@@ -3,7 +3,7 @@ import type { FailureRecord } from './failure-report.js';
 
 /**
  * Claude fallback for the failures registerFailureCapture could not resolve
- * deterministically — no selector recovered, or the recovered selector matched
+ * deterministically - no selector recovered, or the recovered selector matched
  * nothing live. Deliberately a separate, narrower task from finder.ts's
  * open-ended bug hunting: the failure is already known (err.message says so);
  * the only open question is *where on screen it shows up*, from a fixed list
@@ -57,15 +57,15 @@ const SYSTEM_PROMPT = `A Cypress test failed. You are given the screenshot at th
 the test's own error message, and a list of candidate elements on the page with their
 tag, visible text, and bounding box in CSS pixels.
 
-This is not exploratory bug hunting — the failure is already known and described by the
+This is not exploratory bug hunting - the failure is already known and described by the
 error message. Your only job is to say where on screen it is visible, by picking the
 single best-matching element from the list, and to write one short, plain-language
 sentence explaining it for someone triaging CI failures who has not read the error.
 
 Prefer an element whose visible text or position plausibly explains the error message
 over one that merely has a similar name. If nothing in the list corresponds to the
-failure — for example the error describes something absent, like a modal that should
-have appeared — set selector to null and give a region instead, as percentages of the
+failure - for example the error describes something absent, like a modal that should
+have appeared - set selector to null and give a region instead, as percentages of the
 viewport, for roughly where it was expected.
 
 Always call the report tool exactly once.`;
@@ -153,7 +153,7 @@ export class ClaudeFailureExplainer implements FailureExplainer {
   }
 }
 
-/** For tests and offline runs — no API call. */
+/** For tests and offline runs - no API call. */
 export class ReplayFailureExplainer implements FailureExplainer {
   constructor(private readonly explanation: FailureExplanation) {}
   async explain(): Promise<FailureExplanation> {

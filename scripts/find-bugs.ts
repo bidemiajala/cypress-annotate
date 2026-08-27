@@ -21,7 +21,7 @@ const ENV_PATH = join(ROOT, '.env');
  * Read .env into the environment if it exists.
  *
  * This lives in the CLI rather than in the library because importing a module
- * should not read files from disk — code that uses `annotate()` or
+ * should not read files from disk - code that uses `annotate()` or
  * `ClaudeReasoner` from its own program supplies credentials its own way.
  */
 function loadDotEnv(): boolean {
@@ -44,7 +44,7 @@ Create a .env file in the project root (copy .env.example):
 Get a key at https://console.anthropic.com/settings/keys
 
 Alternatives: export ANTHROPIC_API_KEY in your shell, or install the Anthropic
-CLI and run "ant auth login" — the SDK picks up a stored profile with no env var.
+CLI and run "ant auth login" - the SDK picks up a stored profile with no env var.
 
 To try the pipeline without a key, use --replay:
 
@@ -97,7 +97,7 @@ interface ExpectedEntry {
 
 /**
  * Stands in for the model. Recorded findings name a real CSS selector, which is
- * translated into the inventory handle the model would have returned — so the
+ * translated into the inventory handle the model would have returned - so the
  * resolution path under test is identical to the live one.
  */
 class ReplayReasoner implements Reasoner {
@@ -152,7 +152,7 @@ const target = /^[a-z]+:\/\//i.test(values.url) ? values.url : pathToFileURL(val
 
 /**
  * The SDK resolves credentials lazily, at request time rather than at
- * construction, so a missing key surfaces here as a stream error — not when the
+ * construction, so a missing key surfaces here as a stream error - not when the
  * client is built.
  */
 function isCredentialError(error: unknown): boolean {
@@ -227,7 +227,7 @@ try {
     for (const warning of item.warnings) console.log(`      ! ${warning}`);
   }
   for (const item of result.unresolved) {
-    console.log(`  [unresolved] ${item.finding.description.slice(0, 58)} — ${item.reason}`);
+    console.log(`  [unresolved] ${item.finding.description.slice(0, 58)} - ${item.reason}`);
   }
   console.log(`\nWrote images and report.json to ${outDir}/\n`);
 } catch (error) {

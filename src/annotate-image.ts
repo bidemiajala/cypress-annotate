@@ -11,7 +11,7 @@ import type {
 /**
  * Annotating an image that somebody else captured.
  *
- * Nothing here knows about Playwright, CDP, or any particular browser driver —
+ * Nothing here knows about Playwright, CDP, or any particular browser driver -
  * it takes a screenshot, the page metrics that were true when it was taken, and
  * rectangles in CSS pixels. That is deliberate: the screenshot may come from a
  * Playwright MCP server, a Chrome DevTools MCP server, or a Cypress run, and the
@@ -107,7 +107,7 @@ function clampRect(rect: PixelRect, width: number, height: number): PixelRect {
  * The image-pixels-per-CSS-pixel ratio actually used for this capture.
  *
  * `devicePixelRatio` is the intended answer, but it is only a claim about the
- * browser — not about the file. Agent browser tools routinely downscale
+ * browser - not about the file. Agent browser tools routinely downscale
  * screenshots to keep them cheap to send, and a capture that has been resized
  * behind your back is exactly what makes a box drift. So the image is measured
  * and the reported ratio is treated as a hint.
@@ -129,7 +129,7 @@ export function resolveScale(
   const derived = imageWidth / cssWidth;
   warnings.push(
     `Screenshot is ${imageWidth}px wide but devicePixelRatio ${devicePixelRatio} over ${cssWidth} ` +
-      `CSS px predicted ${expected}px — the image was probably rescaled. ` +
+      `CSS px predicted ${expected}px - the image was probably rescaled. ` +
       `Using the measured scale ${derived.toFixed(4)} instead.`,
   );
   return derived;

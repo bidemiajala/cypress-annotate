@@ -156,7 +156,7 @@ async function runCase(page: Page, testCase: Case, index: number): Promise<CaseR
                 basis: 'document' as const,
               };
             }
-            // innerWidth/Height, matching readPageMetrics — documentElement's
+            // innerWidth/Height, matching readPageMetrics - documentElement's
             // client size is the content size in quirks mode.
             return {
               xPct: (r.x / window.innerWidth) * 100,

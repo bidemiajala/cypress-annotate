@@ -13,7 +13,7 @@ export async function readPageMetrics(page: Page): Promise<PageMetrics> {
       scrollX: window.scrollX,
       scrollY: window.scrollY,
       // window.innerWidth/Height, not documentElement.clientWidth/Height: in
-      // quirks mode (a page with no doctype — Hacker News, plenty of internal
+      // quirks mode (a page with no doctype - Hacker News, plenty of internal
       // tools) the root element reports the *content* size, so clientHeight can
       // be the full document height. innerWidth/Height is also exactly the
       // viewport Playwright was configured with, which is what the screenshot

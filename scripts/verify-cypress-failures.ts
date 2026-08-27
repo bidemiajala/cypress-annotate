@@ -2,7 +2,7 @@
  * Checks out/cypress/failures.json against what cypress/e2e/failure-capture.cy.ts
  * is known to produce. The pixel-alignment math is already proven by
  * verify.ts/verify-image.ts (annotateScreenshot is the same annotateImage
- * underneath) — what's new here is the failure-hook's own logic: does it
+ * underneath) - what's new here is the failure-hook's own logic: does it
  * recover the right selector, build the right label, and route correctly
  * between the deterministic and inventory-fallback paths.
  */
@@ -40,7 +40,7 @@ function findRecord(records: FailureRecord[], titleContains: string): FailureRec
 async function main(): Promise<void> {
   const raw = await readFile(REPORT_PATH, 'utf8').catch(() => null);
   if (!raw) {
-    console.log(`FAIL  ${REPORT_PATH} does not exist — did the failing spec even run?`);
+    console.log(`FAIL  ${REPORT_PATH} does not exist - did the failing spec even run?`);
     process.exit(1);
   }
   const records = JSON.parse(raw) as FailureRecord[];

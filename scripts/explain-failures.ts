@@ -2,7 +2,7 @@
  * Tier 2: explains the failures registerFailureCapture could not resolve on
  * its own. Reads the same failures.json the live Cypress run wrote, calls
  * Claude only for the unresolved entries, and draws a box using the rect
- * already captured live at failure time — no browser is opened here, because
+ * already captured live at failure time - no browser is opened here, because
  * by now there is nothing left to open one against.
  *
  * `--replay <file>` swaps the Claude call for recorded explanations, mirroring
@@ -67,7 +67,7 @@ const records = JSON.parse(await readFile(values.report, 'utf8')) as FailureReco
 const unresolved = records.filter((r) => !r.resolved);
 
 if (unresolved.length === 0) {
-  console.log('Nothing to explain — every failure already resolved deterministically.');
+  console.log('Nothing to explain - every failure already resolved deterministically.');
   process.exit(0);
 }
 

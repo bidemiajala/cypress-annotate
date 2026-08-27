@@ -1,6 +1,6 @@
 ---
 name: annotate-bug
-description: Draw an accurate box on a screenshot of the live page to show exactly where a visual bug is. Use after finding a layout or rendering defect during browser testing, when the bug report needs to point at a specific element rather than attach a raw screenshot. Works with whichever browser MCP backend is connected — Playwright MCP or Chrome DevTools MCP.
+description: Draw an accurate box on a screenshot of the live page to show exactly where a visual bug is. Use after finding a layout or rendering defect during browser testing, when the bug report needs to point at a specific element rather than attach a raw screenshot. Works with whichever browser MCP backend is connected - Playwright MCP or Chrome DevTools MCP.
 ---
 
 # Annotating a bug on a live page
@@ -29,7 +29,7 @@ only valid for the scroll position it was measured at.
 
 ### 1. Choose the element
 
-Pick the single element that *is* wrong — not its container, and not the element
+Pick the single element that *is* wrong - not its container, and not the element
 it collides with. If a page snapshot gave you an element ref, resolve it to a CSS
 selector; prefer `#id` or `[data-testid=…]` over a structural path.
 
@@ -50,7 +50,7 @@ evaluate_script({ pageId: <id>, function: "<the edited snippet>", filePath: "/ab
 ```
 
 Check the result: each target has `found: true` and a `rect`. If `found` is
-false, the selector is wrong — fix it rather than proceeding, or fall back to a
+false, the selector is wrong - fix it rather than proceeding, or fall back to a
 region (below). If `matchCount` is above 1, the selector is ambiguous and the
 first match gets annotated, which may not be the one you mean.
 
@@ -86,16 +86,16 @@ cd $ANNOTATE_REPO && npm run annotate-shot -- \
 
 One `--label` per target, in the same order as `SELECTORS`. Useful extras:
 
-- `--crop` — close-up of the element with the rest dimmed. Best for a ticket.
-- `--capture fullPage` — required if the screenshot was a full-page capture.
-- `--shape arrow` — point at it instead of boxing it.
-- `--color '#FF6A00'` — e.g. colour by severity.
+- `--crop` - close-up of the element with the rest dimmed. Best for a ticket.
+- `--capture fullPage` - required if the screenshot was a full-page capture.
+- `--shape arrow` - point at it instead of boxing it.
+- `--color '#FF6A00'` - e.g. colour by severity.
 
 Then attach `annotated.png` to the report and say what is wrong in words as well.
 
 ## When there is no element to point at
 
-If the defect is *absent* content — blank space where something should render —
+If the defect is *absent* content - blank space where something should render -
 there is no selector to measure. Skip step 2 and give a rectangle as percentages
 of the viewport:
 
@@ -111,9 +111,9 @@ selector is measured, a region is guessed.
 
 The command prints warnings. Two are worth acting on:
 
-- *"matched N elements; annotated the first"* — the selector is ambiguous. Make
+- *"matched N elements; annotated the first"* - the selector is ambiguous. Make
   it specific and re-run.
-- *"the image was probably rescaled"* — not a problem. Both backends can resize
+- *"the image was probably rescaled"* - not a problem. Both backends can resize
   screenshots, so the true scale is measured from the image rather than trusted
   from `devicePixelRatio`. The box is still correct.
 

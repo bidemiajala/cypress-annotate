@@ -1,6 +1,6 @@
 /**
  * Exercises failure-selector.ts against error objects captured from a real
- * Cypress 15.19 run (see cypress/e2e/probe-failure.cy.ts, now deleted — its
+ * Cypress 15.19 run (see cypress/e2e/probe-failure.cy.ts, now deleted - its
  * output is reproduced here as fixtures so this stays fast and needs no
  * browser). If Cypress ever changes this error shape, this is what will show
  * it, since these are not hand-written guesses.
@@ -30,7 +30,7 @@ function command(name: string, args: unknown[]): CommandLike {
 
 // Recorded verbatim from a real Cypress 15.19 run (out/cypress/failures.json,
 // produced by cypress/e2e/failure-capture.cy.ts). err.expected/err.actual are
-// chai's own quoted rendering, not the raw values — confirmed by that run, not
+// chai's own quoted rendering, not the raw values - confirmed by that run, not
 // assumed, after an earlier version of this file guessed wrong and shipped a
 // label reading `Expected "'THIS WILL NOT MATCH'" but got "'£244.99'"`.
 const HAVE_TEXT_ERROR = {
@@ -98,7 +98,7 @@ check('existence failure recovers via message when command state is missing', ()
 });
 
 check('a command targeting a non-locator does not falsely claim its args', () => {
-  // e.g. cy.wait(1000).should(...) — 'wait' is not a locator command, so a
+  // e.g. cy.wait(1000).should(...) - 'wait' is not a locator command, so a
   // numeric arg must never be mistaken for a selector.
   const recovered = recoverFailure(CONTAIN_ERROR, command('wait', [1000]));
   // Falls through to message parsing rather than treating 1000 as a selector.

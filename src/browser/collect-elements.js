@@ -1,4 +1,4 @@
-// This file is read as text and evaluated inside the page — it is never
+// This file is read as text and evaluated inside the page - it is never
 // imported or bundled. Keeping it out of the TypeScript build is deliberate:
 // esbuild's keepNames transform injects a `__name` helper into any function it
 // compiles, and that helper does not exist in the browser, so a serialized
@@ -85,7 +85,7 @@
   }
 
   // An element a developer deliberately named is worth listing even when it is
-  // just a wrapper — a misaligned or overflowing container is exactly the kind
+  // just a wrapper - a misaligned or overflowing container is exactly the kind
   // of target whose children, not itself, carry the text.
   function hasStableName(el) {
     if (el.hasAttribute('id')) return true;

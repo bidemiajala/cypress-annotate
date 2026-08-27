@@ -3,7 +3,7 @@
  *
  * The Claude call is driven through a stubbed fetch that returns a real SSE
  * stream, so request construction, stream handling and tool-use parsing are all
- * covered — the parts that would otherwise only fail on a live, billed call.
+ * covered - the parts that would otherwise only fail on a live, billed call.
  */
 import assert from 'node:assert/strict';
 import Anthropic from '@anthropic-ai/sdk';

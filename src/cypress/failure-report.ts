@@ -28,7 +28,7 @@ export interface FailureRecord {
   /**
    * Present only when no selector resolved. A same-shape inventory to the one
    * the MCP skill uses, captured live because a screenshot alone carries no
-   * DOM information — this is what lets the Claude fallback reason about the
+   * DOM information - this is what lets the Claude fallback reason about the
    * failure after the browser session is long gone.
    */
   inventory: DomMeasurement['targets'] | null;
