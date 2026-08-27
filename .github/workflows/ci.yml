@@ -200,3 +200,67 @@ jobs:
             exit 1
           fi
           echo "ok, none found"
+
+  # Publishes to npm when main moves and every job above has passed. Guarded on
+  # the version in package.json being new, so an ordinary merge that does not
+  # bump the version is a no-op rather than a failure on EPUBLISHCONFLICT.
+  #
+  # Authentication is npm trusted publishing over OIDC, so there is no token
+  # anywhere in this repo. It requires a trusted publisher configured on the
+  # package at npmjs.com naming this repo and this workflow file, ci.yml.
+  # Renaming this file breaks publishing until the setting is updated to match.
+  publish:
+    name: publish to npm
+    needs: [check, cypress, pipeline, package, audit, prose]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # to push the tag and cut the release
+      id-token: write # to mint the OIDC token npm authenticates with
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      # Trusted publishing needs npm 11.5.1 or later. Node 22 still bundles
+      # npm 10.x, so the bundled one cannot do this.
+      - name: Upgrade npm
+        run: |
+          npm install -g npm@latest
+          npm --version
+      - run: npm ci
+
+      - name: Is this version already on npm?
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          NAME=$(node -p "require('./package.json').name")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if npm view "$NAME@$VERSION" version > /dev/null 2>&1; then
+            echo "$NAME@$VERSION is already published, nothing to do."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "$NAME@$VERSION is new, publishing."
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # No token and no --provenance flag. Trusted publishing authenticates over
+      # OIDC and attaches provenance on its own, so npm shows a verified badge
+      # naming the commit and build that produced the tarball.
+      - name: Publish
+        if: steps.version.outputs.publish == 'true'
+        run: npm publish --access public
+
+      - name: Tag and release
+        if: steps.version.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git tag "v$VERSION"
+          git push origin "v$VERSION"
+          gh release create "v$VERSION" \
+            --title "v$VERSION" \
+            --generate-notes
