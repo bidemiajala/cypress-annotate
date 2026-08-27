@@ -45,6 +45,7 @@
   "files": [
     "dist",
     "src/browser",
+    "DOCS",
     "README.md",
     "LICENSE"
   ],
