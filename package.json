@@ -2,6 +2,29 @@
   "name": "cypress-annotate",
   "version": "0.1.0",
   "description": "Annotate Cypress screenshots and failed-test runs with pixel-accurate boxes, pointing at exactly what broke.",
+  "keywords": [
+    "cypress",
+    "cypress-plugin",
+    "screenshot",
+    "annotation",
+    "testing",
+    "playwright",
+    "claude",
+    "visual-testing"
+  ],
+  "license": "MIT",
+  "author": "bidemiajala",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bidemiajala/cypress-annotate.git"
+  },
+  "bugs": {
+    "url": "https://github.com/bidemiajala/cypress-annotate/issues"
+  },
+  "homepage": "https://github.com/bidemiajala/cypress-annotate#readme",
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -22,7 +45,8 @@
   "files": [
     "dist",
     "src/browser",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json && node scripts/copy-browser-assets.js",
