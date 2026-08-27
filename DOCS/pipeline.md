@@ -58,6 +58,56 @@ overlay), the measured `elements`, the final `drawnRects` in image pixels, and
 a zero-sized box, element is outside the viewport, element is fixed during a
 full-page capture.
 
+### Annotating an image somebody else captured
+
+`annotateImage()` is the one export here that never opens a browser and knows
+nothing about any driver. Give it a PNG, the page metrics that were true when it
+was taken, and rectangles in CSS pixels. The Cypress plugin and the MCP path both
+go through it, and so can anything else that can produce those three things.
+
+```ts
+import { annotateImage } from 'cypress-annotate';
+import { readFile, writeFile } from 'node:fs/promises';
+
+const result = await annotateImage(
+  await readFile('shot.png'),
+  [{
+    // Viewport-relative CSS px, straight from getBoundingClientRect().
+    viewportRect: { x: 100, y: 100, width: 320, height: 90 },
+    label: 'Apply button escapes its card',
+  }],
+  {
+    metrics: {
+      devicePixelRatio: 2,
+      scrollX: 0,
+      scrollY: 0,
+      viewportWidth: 1280,
+      viewportHeight: 800,
+      documentWidth: 1280,
+      documentHeight: 4200,
+    },
+    capture: 'viewport',
+  },
+);
+
+await writeFile('annotated.png', result.image);
+console.log(result.scale, result.drawnRects, result.warnings);
+```
+
+The argument list is positional, `(screenshot, targets, options)`, and the
+metrics are the four dimensions plus scroll and dpr. Both are easy to get wrong
+from the type names alone, which is why the example is here.
+
+`devicePixelRatio` is treated as a hint rather than a fact. `resolveScale()`
+compares the image against the viewport it was supposed to cover and uses the
+measured ratio when the two disagree, because a screenshot that was downscaled
+behind your back is exactly what makes a box drift. Whatever it settles on comes
+back as `result.scale`, and a mismatch lands in `result.warnings`.
+
+Set `isFixed: true` on a target whose element is `position: fixed`, so it gets no
+scroll correction. Pass `documentRect` yourself only when the viewport rect and
+the scroll offset are not enough to derive it.
+
 ### The region fallback
 
 When no element corresponds to the problem (blank space where something should
