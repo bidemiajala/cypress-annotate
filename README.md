@@ -16,6 +16,10 @@ else to configure.
 npm install --save-dev cypress-annotate
 ```
 
+Needs Node 20.19+ or 22.12+. The package is ESM, and those are the versions that
+can `require()` an ES module, which is what Cypress's default webpack and Babel
+preprocessor ends up doing with the import in step 3.
+
 ### 2. Register the Node task
 
 The measuring happens in the browser, the image compositing happens in Node. This

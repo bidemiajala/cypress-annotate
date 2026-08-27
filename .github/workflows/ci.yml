@@ -166,6 +166,31 @@ jobs:
             }
           '
 
+      # 0.1.2 shipped a bug this step exists to prevent a repeat of: the exports
+      # map had only an `import` condition, so every entry point was unreachable
+      # from CommonJS. Cypress's stock webpack+Babel preprocessor turns a static
+      # import in cypress/support/e2e.js into a require, which meant the
+      # documented setup failed outright with ERR_PACKAGE_PATH_NOT_EXPORTED.
+      # Importing with ESM alone never caught it.
+      - name: Require each entry point from CommonJS
+        working-directory: /tmp/pkg
+        run: |
+          node -e '
+            const specs = [
+              "cypress-annotate",
+              "cypress-annotate/cypress/task",
+              "cypress-annotate/cypress/failure-hook",
+            ];
+            for (const spec of specs) {
+              const mod = require(spec);
+              if (Object.keys(mod).length === 0) {
+                console.error(`FAIL require(${spec}) resolved but exported nothing`);
+                process.exit(1);
+              }
+              console.log(`ok   require(${spec}) (${Object.keys(mod).length} exports)`);
+            }
+          '
+
   audit:
     name: audit
     runs-on: ubuntu-latest
