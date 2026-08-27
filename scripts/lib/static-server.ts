@@ -12,7 +12,7 @@ const TYPES: Record<string, string> = {
 };
 
 /**
- * Minimal static server for the fixtures, because Cypress needs an http origin —
+ * Minimal static server for the fixtures, because Cypress needs an http origin -
  * `file://` URLs are not reliably visitable.
  */
 export async function startStaticServer(root: string, port = 0): Promise<{ server: Server; url: string }> {

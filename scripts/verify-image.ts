@@ -7,8 +7,8 @@
  * loop.
  *
  * The important cases are the rescaled ones. Both browser MCP servers can hand
- * back a resized image — Playwright MCP with `scale: "css"`, Chrome DevTools MCP
- * with `--screenshot-max-width` — so a pipeline that trusts devicePixelRatio
+ * back a resized image - Playwright MCP with `scale: "css"`, Chrome DevTools MCP
+ * with `--screenshot-max-width` - so a pipeline that trusts devicePixelRatio
  * draws boxes in the wrong place. Playwright is used here only to produce the
  * inputs an MCP server would have produced.
  */
@@ -67,7 +67,7 @@ interface Measurement {
 
 /**
  * Run the very snippet the agent is told to paste, with only the SELECTORS line
- * substituted — so this suite fails if that file is broken, not just if the
+ * substituted - so this suite fails if that file is broken, not just if the
  * library is.
  */
 async function measure(page: Page, selector: string): Promise<Measurement> {
@@ -77,7 +77,7 @@ async function measure(page: Page, selector: string): Promise<Measurement> {
     `const SELECTORS = ${JSON.stringify([selector])};`,
   );
   if (!body.includes(JSON.stringify([selector]))) {
-    throw new Error('Could not substitute SELECTORS — has measure-target.js changed shape?');
+    throw new Error('Could not substitute SELECTORS - has measure-target.js changed shape?');
   }
   return page.evaluate(`(${body})()`) as Promise<Measurement>;
 }
@@ -123,8 +123,8 @@ async function runCase(page: Page, testCase: Case, index: number): Promise<{ ok:
   const slug = `${String(index).padStart(2, '0')}-${testCase.name.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}`;
   await writeFile(join(OUT_DIR, `${slug}.png`), result.image);
 
-  // Downscaling only blends the target's outermost pixels — its interior stays
-  // the exact colour — so the match stays tight. A loose tolerance is actively
+  // Downscaling only blends the target's outermost pixels - its interior stays
+  // the exact colour - so the match stays tight. A loose tolerance is actively
   // harmful: resampling rings around a *different* target's edge and those
   // overshoot pixels then get scanned as if they were this one.
   const painted = await scanForColor(result.rawImage, testCase.color, 24);

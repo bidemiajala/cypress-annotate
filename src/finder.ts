@@ -20,7 +20,7 @@ export interface BugFinding {
  * recorded response, and so a different backend (computer use, an MCP server)
  * can be dropped in without touching the annotation code.
  *
- * This file deliberately has no dependency on `@anthropic-ai/sdk` — see
+ * This file deliberately has no dependency on `@anthropic-ai/sdk` - see
  * claude-reasoner.ts, which implements this interface and is the only file
  * that does. Keeping them separate means importing anything here (from the
  * package's root barrel) never forces the SDK to be installed.

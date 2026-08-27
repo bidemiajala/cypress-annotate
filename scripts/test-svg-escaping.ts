@@ -1,6 +1,6 @@
 /**
  * Proves buildOverlaySvg() cannot be used to inject markup via caller-controlled
- * strings — label text and style.color/labelColor are both part of the public
+ * strings - label text and style.color/labelColor are both part of the public
  * API (annotate(), annotateImage(), cy.annotate(), and the CLI's --color flag
  * all set them), and buildOverlaySvg's own return value is exported public API
  * too, so a consumer could reasonably render it somewhere that isn't just

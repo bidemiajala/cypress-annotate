@@ -1,5 +1,5 @@
 /**
- * Every test in this spec is meant to fail — that is what's under test. Run it
+ * Every test in this spec is meant to fail - that is what's under test. Run it
  * with `npm run test:cypress-failures`, which tolerates the non-zero exit and
  * then checks out/cypress/failures.json for correctness, rather than trusting
  * that a file merely exists.

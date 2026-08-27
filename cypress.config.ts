@@ -46,8 +46,8 @@ export default defineConfig({
          * paint are exactly their border box. The colour is sampled from the
          * image rather than taken from the stylesheet, because Electron's macOS
          * capture shifts colours; `nearest` then reports which fixture colour
-         * the sample actually is, so a box sitting on the wrong element — or on
-         * the page background — is still caught.
+         * the sample actually is, so a box sitting on the wrong element - or on
+         * the page background - is still caught.
          */
         async probeAndScan({
           path,

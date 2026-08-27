@@ -25,19 +25,19 @@ function slugify(text: string): string {
  *   registerFailureCapture();
  *
  * On every failed test, this recovers the selector the failing command was
- * targeting (deterministic, no AI — see failure-selector.ts), measures it live
+ * targeting (deterministic, no AI - see failure-selector.ts), measures it live
  * while the page is still in its failed state, and draws a box with a label
  * built from the assertion's own expected/actual values.
  *
- * When no selector can be recovered — an existence check, a `cy.contains()`
- * chain, a generic page-state assertion — there is nothing to box
+ * When no selector can be recovered - an existence check, a `cy.contains()`
+ * chain, a generic page-state assertion - there is nothing to box
  * deterministically. Those failures get a plain screenshot plus a live DOM
  * inventory (metrics + candidate elements), written to the same report for a
  * separate, explicit tool to reason about afterwards. That split is
  * deliberate: capturing is free and happens for every failure; calling Claude
  * is a cost decision left to whoever reads the report, not made here.
  *
- * Requires `screenshotOnRunFailure: false` in cypress.config.ts — otherwise
+ * Requires `screenshotOnRunFailure: false` in cypress.config.ts - otherwise
  * Cypress's own automatic failure screenshot and this hook's screenshot race,
  * and it becomes ambiguous which one the DOM measurement actually matches.
  */
@@ -47,7 +47,7 @@ export function registerFailureCapture(options: FailureCaptureOptions = {}): voi
   afterEach(function (this: Mocha.Context) {
     if (this.currentTest?.state !== 'failed') return;
 
-    // Read failure state before issuing any cy.* command below — those mutate
+    // Read failure state before issuing any cy.* command below - those mutate
     // cy.state('current'), so this has to happen first and synchronously.
     const err = this.currentTest.err as CypressLikeError | undefined;
     // cy.state is undocumented Cypress driver internals; guarded because a
@@ -75,7 +75,7 @@ export function registerFailureCapture(options: FailureCaptureOptions = {}): voi
     /**
      * Same measure -> scroll-if-needed -> re-measure discipline as cy.annotate().
      * The failing element was found by cy.state, not chosen from the current
-     * viewport, so unlike cy.annotate() it may sit well below the fold — the
+     * viewport, so unlike cy.annotate() it may sit well below the fold - the
      * whole reason this exists is to point at a mismatch, so screenshotting a
      * viewport that never contains the mismatch would be a silent no-op box.
      */

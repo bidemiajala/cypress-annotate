@@ -13,7 +13,7 @@ export {
 export { measureElement, measureRegion, readPageMetrics } from './measure.js';
 export { buildOverlaySvg, compositeOverlay } from './draw.js';
 export { collectInventory, renderInventory, type InventoryItem } from './inventory.js';
-// ClaudeReasoner is not re-exported here — import it from 'cypress-annotate/reasoner'
+// ClaudeReasoner is not re-exported here - import it from 'cypress-annotate/reasoner'
 // instead. It is the only piece of this package with a real (non-type-only)
 // dependency on @anthropic-ai/sdk; keeping it out of this barrel means every
 // other export here stays usable with neither the SDK nor a peer install of it.
@@ -45,7 +45,7 @@ export interface CaptureOptions extends AnnotateOptions {
  * One-shot: open a URL, annotate it, close the browser.
  *
  * Playwright is loaded lazily, on the first call, rather than imported at the
- * top of this file. `playwright` is an optional peer dependency — a consumer
+ * top of this file. `playwright` is an optional peer dependency - a consumer
  * who only wants annotateImage()/the Cypress plugin (neither of which touch a
  * browser at all) should never be forced to have it installed just because
  * this function exists somewhere else in the same package.

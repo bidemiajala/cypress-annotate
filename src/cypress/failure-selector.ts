@@ -35,19 +35,19 @@ export interface CommandLike {
 export interface RecoveredFailure {
   /** CSS selector the failing command targeted, if one could be recovered. */
   selector: string | null;
-  /** How it was recovered — for diagnostics, not behaviour. */
+  /** How it was recovered - for diagnostics, not behaviour. */
   source: 'command-state' | 'message-selector' | 'message-not-found' | 'none';
   expected: string | null;
   actual: string | null;
-  /** True for "element never existed" failures — there is nothing to box. */
+  /** True for "element never existed" failures - there is nothing to box. */
   elementNotFound: boolean;
 }
 
 /**
  * Chai stores `err.expected`/`err.actual` as chai's own `inspect()` rendering
- * of the value, not the raw value — for a string that means it arrives wrapped
+ * of the value, not the raw value - for a string that means it arrives wrapped
  * in its own single quotes: `err.expected` for `.should('have.text', 'X')` is
- * the five-character string `'X'`, not `X`. Confirmed against a real Cypress
+ * the string `'X'` with its quote marks, not `X`. Confirmed against a real Cypress
  * 15.19 run (see scripts/test-failure-selector.ts) rather than assumed.
  */
 function unquote(value: string | undefined): string | null {
@@ -68,7 +68,7 @@ function firstStringArg(args: unknown[] | undefined): string | null {
 /**
  * chai-jquery renders a matched element as `<tag#id>` or `<tag.class>` inside
  * its assertion messages. This is part of chai-jquery's public message format,
- * not an accident of one version, but it is still text-parsing — used only when
+ * not an accident of one version, but it is still text-parsing - used only when
  * cy.state('current') did not resolve.
  */
 function selectorFromMessage(message: string): string | null {
@@ -133,7 +133,7 @@ export function describeFailure(err: CypressLikeError | undefined, recovered: Re
   if (recovered.elementNotFound) {
     return `Element never appeared: ${recovered.selector ?? 'unknown selector'}`;
   }
-  // No diffable values (e.g. a `contain` assertion) — the message itself
+  // No diffable values (e.g. a `contain` assertion) - the message itself
   // already states expected vs. found, just less structured.
   const message = err?.message ?? 'Assertion failed';
   return message.replace(/^Timed out retrying after \d+ms:\s*/, '');

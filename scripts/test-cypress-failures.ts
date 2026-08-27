@@ -24,7 +24,7 @@ if (run.status === 0) {
   process.exit(1);
 }
 
-console.log('\n(The failures above are expected — verifying the capture they produced.)\n');
+console.log('\n(The failures above are expected - verifying the capture they produced.)\n');
 
 const verify = spawnSync('npx', ['tsx', 'scripts/verify-cypress-failures.ts'], { stdio: 'inherit' });
 process.exit(verify.status ?? 1);
