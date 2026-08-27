@@ -26,6 +26,44 @@ npm run demo            # end-to-end on the buggy fixture, using recorded findin
 npm run annotate -- --url https://example.com --selector 'a' --label 'Broken link'
 ```
 
+## Installing this as a package in another project
+
+Not published to npm — install directly from the private GitHub repo:
+
+```bash
+npm install github:bidemiajala/ai-annotation
+# or, pinned to a commit: github:bidemiajala/ai-annotation#e0f40dc
+```
+
+That needs read access to the repo (it's private) — either an SSH key on the
+installing machine that has access, or `npm install git+https://<token>@github.com/bidemiajala/ai-annotation.git`
+with a GitHub personal access token that has repo read scope.
+
+**The build runs automatically.** This repo ships TypeScript source, not
+compiled output — `dist/` is gitignored. npm's `prepare` script (`tsc` + a
+small asset-copy step) runs on install for exactly this case: a package
+installed as a git dependency. Confirmed by actually installing it into a
+scratch project and importing both entry points, not assumed.
+
+**Two independent entry points, so a Cypress-only install stays light:**
+
+```ts
+// The core pipeline — needs playwright as a peer dependency
+import { annotateImage, runBugHunt, captureAnnotated } from 'ai-annotation';
+
+// The Cypress plugin — needs neither playwright nor the Anthropic SDK.
+// Confirmed by grepping the import graph and by installing with neither
+// present: this subpath loads and runs.
+import { registerAnnotateTasks } from 'ai-annotation/cypress/task';
+import 'ai-annotation/cypress/commands';
+import { registerFailureCapture } from 'ai-annotation/cypress/failure-hook';
+```
+
+`playwright`, `@anthropic-ai/sdk`, and `cypress` are all `peerDependencies`,
+marked optional — npm won't install any of them for you, and won't warn
+loudly if you skip them, as long as you only use the entry point that doesn't
+need them. Install whichever ones your own usage actually calls into.
+
 ## The coordinate rules
 
 Four things have to line up, and each one is a separate opportunity to be a few

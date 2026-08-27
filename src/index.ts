@@ -1,6 +1,6 @@
-import { chromium, type Browser, type LaunchOptions } from 'playwright';
 import { annotate } from './annotate.js';
 import type { Annotation, AnnotateOptions, AnnotateResult } from './types.js';
+import type { Browser, LaunchOptions } from 'playwright';
 
 export { annotate } from './annotate.js';
 export {
@@ -35,7 +35,15 @@ export interface CaptureOptions extends AnnotateOptions {
   launch?: LaunchOptions;
 }
 
-/** One-shot: open a URL, annotate it, close the browser. */
+/**
+ * One-shot: open a URL, annotate it, close the browser.
+ *
+ * Playwright is loaded lazily, on the first call, rather than imported at the
+ * top of this file. `playwright` is an optional peer dependency — a consumer
+ * who only wants annotateImage()/the Cypress plugin (neither of which touch a
+ * browser at all) should never be forced to have it installed just because
+ * this function exists somewhere else in the same package.
+ */
 export async function captureAnnotated(
   url: string,
   annotations: Annotation[],
@@ -43,6 +51,7 @@ export async function captureAnnotated(
 ): Promise<AnnotateResult> {
   let browser: Browser | undefined;
   try {
+    const { chromium } = await import('playwright');
     browser = await chromium.launch({ headless: options.headless ?? true, ...options.launch });
     const context = await browser.newContext({
       viewport: options.viewport ?? { width: 1280, height: 800 },
