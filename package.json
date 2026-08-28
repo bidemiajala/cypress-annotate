@@ -1,6 +1,6 @@
 {
   "name": "cypress-annotate",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Annotate Cypress screenshots and failed-test runs with pixel-accurate boxes, pointing at exactly what broke.",
   "keywords": [
     "cypress",
@@ -55,11 +55,40 @@
       "require": "./dist/claude-reasoner.js",
       "default": "./dist/claude-reasoner.js"
     },
-    "./cypress/*": {
-      "types": "./dist/cypress/*.d.ts",
-      "import": "./dist/cypress/*.js",
-      "require": "./dist/cypress/*.js",
-      "default": "./dist/cypress/*.js"
+    "./cypress/task": {
+      "types": "./dist/cypress/task.d.ts",
+      "import": "./dist/cypress/task.js",
+      "require": "./dist/cypress/task.js",
+      "default": "./dist/cypress/task.js"
+    },
+    "./cypress/commands": {
+      "types": "./dist/cypress/commands.d.ts",
+      "import": "./dist/cypress/commands.js",
+      "require": "./dist/cypress/commands.js",
+      "default": "./dist/cypress/commands.js"
+    },
+    "./cypress/failure-hook": {
+      "types": "./dist/cypress/failure-hook.d.ts",
+      "import": "./dist/cypress/failure-hook.js",
+      "require": "./dist/cypress/failure-hook.js",
+      "default": "./dist/cypress/failure-hook.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "typesVersions": {
+    "*": {
+      "reasoner": [
+        "./dist/claude-reasoner.d.ts"
+      ],
+      "cypress/task": [
+        "./dist/cypress/task.d.ts"
+      ],
+      "cypress/commands": [
+        "./dist/cypress/commands.d.ts"
+      ],
+      "cypress/failure-hook": [
+        "./dist/cypress/failure-hook.d.ts"
+      ]
     }
   },
   "files": [

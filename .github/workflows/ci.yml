@@ -172,6 +172,36 @@ jobs:
       # import in cypress/support/e2e.js into a require, which meant the
       # documented setup failed outright with ERR_PACKAGE_PATH_NOT_EXPORTED.
       # Importing with ESM alone never caught it.
+      # The exports map used to be a ./cypress/* wildcard, which quietly made
+      # all eight files in dist/cypress public API when only three are
+      # documented. These are internals, and nothing outside the package should
+      # be able to reach them.
+      - name: Internal modules stay private
+        working-directory: /tmp/pkg
+        run: |
+          node --input-type=module -e '
+            const internals = [
+              "cypress-annotate/cypress/measure-dom",
+              "cypress-annotate/cypress/scroll-into-view",
+              "cypress-annotate/cypress/failure-selector",
+              "cypress-annotate/cypress/failure-report",
+              "cypress-annotate/cypress/failure-explainer",
+            ];
+            for (const spec of internals) {
+              try {
+                await import(spec);
+                console.error(`FAIL ${spec} is reachable but is not public API`);
+                process.exit(1);
+              } catch (err) {
+                if (err.code !== "ERR_PACKAGE_PATH_NOT_EXPORTED") {
+                  console.error(`FAIL ${spec} threw ${err.code}, expected ERR_PACKAGE_PATH_NOT_EXPORTED`);
+                  throw err;
+                }
+                console.log(`ok   ${spec} is not exported`);
+              }
+            }
+          '
+
       - name: Require each entry point from CommonJS
         working-directory: /tmp/pkg
         run: |
@@ -190,6 +220,39 @@ jobs:
               console.log(`ok   require(${spec}) (${Object.keys(mod).length} exports)`);
             }
           '
+
+  # publint checks the package manifest for publishing mistakes. attw resolves
+  # every entry point the way each consumer flavour would and reports what they
+  # actually get. attw would have caught the 0.1.1 CommonJS bug: with only an
+  # `import` condition it reports "Resolution failed" for node16-from-CJS.
+  #
+  # cjs-resolves-to-esm is ignored deliberately. It fires because require()
+  # lands on an ESM file, which is a real error on old Node but not on the
+  # versions this package supports, where require(esm) works. That trade is
+  # documented in the engines field, and a CommonJS twin build is blocked by
+  # import.meta.url in inventory.ts anyway.
+  packaging:
+    name: packaging lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Pack
+        run: |
+          mkdir -p /tmp/lintpkg
+          npm pack --pack-destination /tmp/lintpkg
+      - name: publint
+        run: npx --yes publint@latest /tmp/lintpkg/cypress-annotate-*.tgz
+      - name: Are the types wrong?
+        run: |
+          npx --yes @arethetypeswrong/cli@latest \
+            --pack /tmp/lintpkg/cypress-annotate-*.tgz \
+            --ignore-rules cjs-resolves-to-esm
 
   audit:
     name: audit
@@ -236,7 +299,7 @@ jobs:
   # Renaming this file breaks publishing until the setting is updated to match.
   publish:
     name: publish to npm
-    needs: [check, cypress, pipeline, package, audit, prose]
+    needs: [check, cypress, pipeline, package, packaging, audit, prose]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
