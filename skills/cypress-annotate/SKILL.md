@@ -64,10 +64,17 @@ The offset used is the frame's content origin, so frames with their own border
 and padding land correctly and a frame's internal scroll needs no correction.
 Cross-origin frames cannot be measured and fail loudly.
 
-Crop tight with the rest dimmed, which is what to use for a ticket attachment:
+Crop tight, which is what to use for a ticket attachment. Dimming the
+surroundings is a separate `style` setting, since `crop` alone leaves them at
+full brightness:
 
 ```ts
-cy.annotate('#promo-apply', { label: 'Escapes its card', crop: true, cropPadding: 80 });
+cy.annotate('#promo-apply', {
+  label: 'Escapes its card',
+  crop: true,
+  cropPadding: 220,
+  style: { dimOutside: 0.45 },
+});
 ```
 
 It overwrites the screenshot Cypress just recorded, so the annotated image is
@@ -88,7 +95,7 @@ cy.annotate('#grand-total-value', { label: 'Wrong total' }).then((result) => {
 | --- | --- | --- |
 | `label` | none | Box text. One string, or one per selector in order. |
 | `name` | slug of first selector | Screenshot filename. |
-| `crop` | `false` | Crop to the element, dim everything else. |
+| `crop` | `false` | Crop to the element, keeping `cropPadding` of context. |
 | `cropPadding` | pipeline default | CSS px of context kept around the crop. |
 | `shape` | `box` | Shape drawn around the target. |
 | `style` | none | Colours, stroke width, label colour, dim strength. |
