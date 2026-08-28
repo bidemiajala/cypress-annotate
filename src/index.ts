@@ -50,6 +50,29 @@ export interface CaptureOptions extends AnnotateOptions {
  * browser at all) should never be forced to have it installed just because
  * this function exists somewhere else in the same package.
  */
+/**
+ * playwright is an optional peer, so a consumer who only uses the Cypress
+ * plugin or annotateImage never installs it. Reaching this without it is an
+ * ordinary mistake, and the bare ERR_MODULE_NOT_FOUND names an internal dist
+ * path rather than the two commands that fix it.
+ */
+async function loadChromium(): Promise<typeof import('playwright')> {
+  try {
+    return await import('playwright');
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException)?.code === 'ERR_MODULE_NOT_FOUND') {
+      throw new Error(
+        'captureAnnotated() needs playwright, which is an optional peer dependency.\n' +
+          '  npm install playwright\n' +
+          '  npx playwright install chromium\n' +
+          'The Cypress plugin and annotateImage() do not need it.',
+        { cause: error },
+      );
+    }
+    throw error;
+  }
+}
+
 export async function captureAnnotated(
   url: string,
   annotations: Annotation[],
@@ -57,7 +80,7 @@ export async function captureAnnotated(
 ): Promise<AnnotateResult> {
   let browser: Browser | undefined;
   try {
-    const { chromium } = await import('playwright');
+    const { chromium } = await loadChromium();
     browser = await chromium.launch({ headless: options.headless ?? true, ...options.launch });
     const context = await browser.newContext({
       viewport: options.viewport ?? { width: 1280, height: 800 },
