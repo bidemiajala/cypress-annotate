@@ -53,6 +53,17 @@ cy.annotate(['#promo-apply', '#order-ref'], {
 });
 ```
 
+Reach into an iframe with `{ frame, selector }`, outermost frame first:
+
+```ts
+cy.annotate({ frame: 'iframe#checkout', selector: '.pay-button' });
+cy.annotate({ frame: ['iframe#outer', 'iframe#inner'], selector: '.total' });
+```
+
+The offset used is the frame's content origin, so frames with their own border
+and padding land correctly and a frame's internal scroll needs no correction.
+Cross-origin frames cannot be measured and fail loudly.
+
 Crop tight with the rest dimmed, which is what to use for a ticket attachment:
 
 ```ts

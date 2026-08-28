@@ -8,6 +8,19 @@ import type { PageMetrics } from '../types.js';
  * same metrics definitions, same fixed-ancestry rule, same rect shape.
  */
 
+/**
+ * A target to measure. A bare string is a selector in the top document. The
+ * object form reaches into one or more nested iframes first, the same shape the
+ * Playwright path takes as `selector: ['iframe#checkout', '.pay-button']`.
+ */
+export type AnnotateTargetSpec = string | { frame: string | string[]; selector: string };
+
+export function describeTarget(spec: AnnotateTargetSpec): string {
+  if (typeof spec === 'string') return spec;
+  const frames = Array.isArray(spec.frame) ? spec.frame : [spec.frame];
+  return [...frames, spec.selector].join(' >>> ');
+}
+
 export interface MeasuredDomTarget {
   selector: string;
   found: boolean;
@@ -126,13 +139,83 @@ export function refSelector(ref: string): string {
   return `[${REF_ATTR}="${ref}"]`;
 }
 
-export function measureTargets(win: Window, selectors: string[]): DomMeasurement {
-  const metrics = readMetrics(win);
+interface ResolvedHost {
+  win: Window;
+  offsetX: number;
+  offsetY: number;
+}
 
-  const targets = selectors.map<MeasuredDomTarget>((selector) => {
+/**
+ * Walk a chain of iframe selectors, accumulating the offset of each frame's
+ * content origin.
+ *
+ * The offset is the frame's border box plus its own border and padding, not the
+ * border box alone. A rect measured inside the frame is already relative to that
+ * frame's viewport, so the frame's internal scroll needs no correction. This is
+ * the same rule src/measure.ts applies on the Playwright path, and the two must
+ * not drift.
+ */
+function resolveHost(top: Window, frames: string[]): ResolvedHost {
+  let win = top;
+  let offsetX = 0;
+  let offsetY = 0;
+
+  for (const frameSelector of frames) {
+    const frameEl = win.document.querySelector(frameSelector);
+    if (!frameEl) throw new Error(`frame not found: ${frameSelector}`);
+    if (frameEl.tagName.toLowerCase() !== 'iframe') {
+      throw new Error(`not an iframe: ${frameSelector}`);
+    }
+
+    // Cross-origin frames throw here, or hand back null. Either way the frame's
+    // document cannot be measured, and saying so beats a silently wrong box.
+    let inner: Window | null = null;
+    try {
+      inner = (frameEl as HTMLIFrameElement).contentWindow;
+      if (inner) void inner.document;
+    } catch {
+      inner = null;
+    }
+    if (!inner || !inner.document) {
+      throw new Error(`cross-origin frame cannot be measured: ${frameSelector}`);
+    }
+
+    const rect = frameEl.getBoundingClientRect();
+    const style = win.getComputedStyle(frameEl);
+    offsetX += rect.left + parseFloat(style.borderLeftWidth) + parseFloat(style.paddingLeft);
+    offsetY += rect.top + parseFloat(style.borderTopWidth) + parseFloat(style.paddingTop);
+    win = inner;
+  }
+
+  return { win, offsetX, offsetY };
+}
+
+export function measureTargets(top: Window, specs: AnnotateTargetSpec[]): DomMeasurement {
+  const metrics = readMetrics(top);
+
+  const targets = specs.map<MeasuredDomTarget>((spec) => {
+    const selector = describeTarget(spec);
+    const frames = typeof spec === 'string'
+      ? []
+      : Array.isArray(spec.frame) ? spec.frame : [spec.frame];
+    const targetSelector = typeof spec === 'string' ? spec : spec.selector;
+
+    let host: ResolvedHost;
+    try {
+      host = resolveHost(top, frames);
+    } catch (error) {
+      return {
+        selector,
+        found: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+
+    const { win, offsetX, offsetY } = host;
+
     let matches: NodeListOf<Element>;
     try {
-      matches = win.document.querySelectorAll(selector);
+      matches = win.document.querySelectorAll(targetSelector);
     } catch (error) {
       return {
         selector,
@@ -155,6 +238,11 @@ export function measureTargets(win: Window, selectors: string[]): DomMeasurement
       }
     }
 
+    // Lift the frame-relative rect into top-document viewport space, which is
+    // the space the screenshot is in.
+    const x = r.x + offsetX;
+    const y = r.y + offsetY;
+
     return {
       selector,
       found: true,
@@ -162,9 +250,9 @@ export function measureTargets(win: Window, selectors: string[]): DomMeasurement
       tag: el.tagName.toLowerCase(),
       text: (el.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 80),
       isFixed,
-      rect: { x: r.x, y: r.y, width: r.width, height: r.height },
+      rect: { x, y, width: r.width, height: r.height },
       inViewport:
-        r.bottom > 0 && r.right > 0 && r.top < win.innerHeight && r.left < win.innerWidth,
+        y + r.height > 0 && x + r.width > 0 && y < top.innerHeight && x < top.innerWidth,
     };
   });
 

@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>iframe target</title>
+<style>
+  body { margin: 0; font-family: system-ui, sans-serif; background: #f4f5f7; }
+  header { height: 64px; background: #1f2430; }
+  /* Border and padding on the frame itself: the offset must account for both,
+     not just the frame's border box. */
+  #checkout {
+    position: absolute; left: 90px; top: 140px;
+    width: 520px; height: 300px;
+    border: 12px solid #2b3a55; padding: 18px; background: #fff;
+  }
+</style>
+</head>
+<body>
+  <header></header>
+  <iframe id="checkout" srcdoc='
+    <body style="margin:0;background:#ffffff">
+      <div style="height:40px"></div>
+      <div id="pay" style="position:absolute;left:60px;top:80px;width:200px;height:48px;background:#00E5FF"></div>
+      <!-- Tall enough that the frame genuinely scrolls internally. -->
+      <div style="height:900px"></div>
+    </body>'></iframe>
+</body>
+</html>
