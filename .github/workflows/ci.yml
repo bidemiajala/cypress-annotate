@@ -36,8 +36,16 @@ jobs:
   # The Cypress plugin against a real Cypress run. Pinned to 22.04 because
   # Cypress's Electron needs libasound2, which 24.04 renamed to libasound2t64.
   cypress:
-    name: cypress plugin
+    name: cypress plugin (${{ matrix.browser }})
     runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        # electron is Cypress's bundled default. chrome is a second Chromium.
+        # firefox is the only genuinely different engine here, and the README's
+        # coordinate rules make Chromium-specific claims about capture
+        # behaviour, so it is the one that can actually falsify them.
+        browser: [electron, chrome, firefox]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -56,13 +64,13 @@ jobs:
           key: cypress-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - run: npm ci
       - run: npx cypress install
-      - run: npm run test:cypress
-      - run: npm run test:cypress-failures
+      - run: npm run test:cypress -- --browser ${{ matrix.browser }}
+      - run: npm run test:cypress-failures -- --browser ${{ matrix.browser }}
       - name: Upload screenshots on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: cypress-output
+          name: cypress-output-${{ matrix.browser }}
           path: |
             cypress/screenshots
             out/cypress

@@ -13,7 +13,11 @@ await rm('out/cypress/failures.json', { force: true });
 const env = { ...process.env };
 delete env.ELECTRON_RUN_AS_NODE;
 
-const run = spawnSync('npx', ['cypress', 'run', '--e2e', '--spec', 'cypress/e2e/failure-capture.cy.ts'], {
+// Extra args are forwarded, so CI can run this across browsers with
+// `npm run test:cypress-failures -- --browser firefox`.
+const passthrough = process.argv.slice(2);
+
+const run = spawnSync('npx', ['cypress', 'run', '--e2e', '--spec', 'cypress/e2e/failure-capture.cy.ts', ...passthrough], {
   stdio: 'inherit',
   env,
   shell: process.platform === 'win32',
