@@ -24,7 +24,7 @@ export interface AnnotateCommandOptions {
   label?: string | string[];
   /** Screenshot name; defaults to a slug of the first selector. */
   name?: string;
-  /** Crop to the element with the surroundings dimmed. Good for a ticket. */
+  /** Crop to the element, keeping `cropPadding` of context. Good for a ticket. */
   crop?: boolean;
   cropPadding?: number;
   shape?: ShapeKind;

@@ -86,7 +86,8 @@ cd $ANNOTATE_REPO && npm run annotate-shot -- \
 
 One `--label` per target, in the same order as `SELECTORS`. Useful extras:
 
-- `--crop` - close-up of the element with the rest dimmed. Best for a ticket.
+- `--crop` - close-up of the element. Best for a ticket. Pair with `--dim 0.45`
+  to darken everything outside the box.
 - `--capture fullPage` - required if the screenshot was a full-page capture.
 - `--shape arrow` - point at it instead of boxing it.
 - `--color '#FF6A00'` - e.g. colour by severity.

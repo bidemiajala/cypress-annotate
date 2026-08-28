@@ -8,6 +8,8 @@ assertion's own expected and actual values, with no AI involved.
 `sharp` is the only thing that installs with it. No browser download, nothing
 else to configure.
 
+![Two elements on a checkout page, each boxed in red and labelled](DOCS/images/annotate.png)
+
 ## Getting started
 
 ### 1. Install
@@ -103,12 +105,20 @@ cy.annotate([
 Cross-origin frames cannot be measured from the page, so those fail loudly
 rather than drawing a box in the wrong place.
 
-Crop tight to the element with the rest of the page dimmed, which is usually what
-you want to paste into a ticket:
+Crop tight to the element, which is usually what you want to paste into a
+ticket. Dimming everything outside the box is a separate `style` setting, since
+the crop on its own keeps the surroundings at full brightness:
 
 ```ts
-cy.annotate('#promo-apply', { label: 'Escapes its card', crop: true, cropPadding: 80 });
+cy.annotate('#promo-apply', {
+  label: 'Apply button escapes its card',
+  crop: true,
+  cropPadding: 220,
+  style: { dimOutside: 0.45 },
+});
 ```
+
+![The Apply button boxed and labelled, with the surrounding page dimmed](DOCS/images/crop.png)
 
 Assert on where the box actually landed. The command yields the result:
 
@@ -125,7 +135,7 @@ cy.annotate('#grand-total-value', { label: 'Wrong total' }).then((result) => {
 | --- | --- | --- |
 | `label` | none | Text on the box. One string, or one per selector in order. |
 | `name` | slug of the first selector | Screenshot filename. |
-| `crop` | `false` | Crop to the element and dim everything outside it. |
+| `crop` | `false` | Crop to the element, keeping `cropPadding` of context. |
 | `cropPadding` | pipeline default | CSS px of context to keep around the crop. |
 | `shape` | `box` | Shape drawn around the target. |
 | `style` | none | Colours, stroke width, label colour, dim strength. |
@@ -190,6 +200,8 @@ element live while the page is still in its failed state, scrolls it into view i
 needed, and draws a box labelled from the assertion's own values:
 
 > Expected "THIS WILL NOT MATCH" but got "£244.99"
+
+![A failed assertion's target boxed in red, labelled with the expected and actual values](DOCS/images/failure-hook.png)
 
 That label comes entirely from `err.expected` and `err.actual`, with **zero LLM
 calls**. Each record in the report carries the spec and test name, the recovered
