@@ -374,8 +374,13 @@ present and importing each entry point for real. CI now does that on every push.
 
 - Label pill widths are estimated from an average glyph ratio, because librsvg
   gives no text measurement API. Long labels get slightly generous padding.
-- Only Chromium is exercised. The fixed-element behaviour in rule 2 is
-  specifically a Chromium capture behaviour and would need re-checking elsewhere.
+- The Cypress plugin is exercised on Electron, Chrome and Firefox in CI, so
+  element measurement, dpr scaling, transforms, cropping and iframe offsets are
+  verified on Gecko as well as Chromium. The alignment suites behind
+  [How alignment is verified](#how-alignment-is-verified) still run on Chromium
+  only, and no suite on any browser covers the fixed-element behaviour in
+  coordinate rule 2, which the plugin sidesteps by capturing the viewport by
+  default.
 
 ## Also in this package
 
