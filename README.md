@@ -81,6 +81,28 @@ cy.annotate(['#promo-apply', '#order-ref'], {
 });
 ```
 
+Reach into an iframe with `{ frame, selector }`. The offset is the frame's
+content origin, so a frame with its own border and padding lands correctly, and a
+frame scrolled internally needs no correction:
+
+```ts
+cy.annotate({ frame: 'iframe#checkout', selector: '.pay-button' }, {
+  label: 'Pay button overflows the frame',
+});
+
+// nested frames, outermost first
+cy.annotate({ frame: ['iframe#outer', 'iframe#inner'], selector: '.total' });
+
+// mix frame targets and plain ones in a single shot
+cy.annotate([
+  '#order-ref',
+  { frame: 'iframe#checkout', selector: '.pay-button' },
+], { label: ['Overflows', 'Escapes its card'] });
+```
+
+Cross-origin frames cannot be measured from the page, so those fail loudly
+rather than drawing a box in the wrong place.
+
 Crop tight to the element with the rest of the page dimmed, which is usually what
 you want to paste into a ticket:
 

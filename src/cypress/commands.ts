@@ -1,5 +1,10 @@
 /// <reference types="cypress" />
-import { measureTargets, type DomMeasurement } from './measure-dom.js';
+import {
+  measureTargets,
+  describeTarget,
+  type AnnotateTargetSpec,
+  type DomMeasurement,
+} from './measure-dom.js';
 import { isFullyVisible, scrollIntoViewIfNeeded } from './scroll-into-view.js';
 import type { AnnotateTaskResult } from './task.js';
 import type { AnnotationStyle, ShapeKind } from '../types.js';
@@ -42,26 +47,29 @@ export interface AnnotateCommandOptions {
   fullPage?: boolean;
 }
 
+export type { AnnotateTargetSpec };
+
 function slugify(text: string): string {
   return text.replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'annotated';
 }
 
 Cypress.Commands.add(
   'annotate',
-  (selector: string | string[], options: AnnotateCommandOptions = {}) => {
-    const selectors = Array.isArray(selector) ? selector : [selector];
+  (target: AnnotateTargetSpec | AnnotateTargetSpec[], options: AnnotateCommandOptions = {}) => {
+    const specs = Array.isArray(target) ? target : [target];
     const labels = options.label === undefined
       ? []
       : Array.isArray(options.label)
         ? options.label
         : [options.label];
-    const name = options.name ?? slugify(selectors[0] ?? 'annotated');
+    const first0 = specs[0];
+    const name = options.name ?? slugify(first0 === undefined ? 'annotated' : describeTarget(first0));
     const capture = options.fullPage ? 'fullPage' : 'viewport';
 
     return cy
       .window({ log: false })
       .then((win) => {
-        const initial = measureTargets(win, selectors);
+        const initial = measureTargets(win, specs);
         const first = initial.targets[0];
 
         // Only scroll when the element genuinely is not fully visible. Cypress's
@@ -75,9 +83,15 @@ Cypress.Commands.add(
 
         if (!needsScroll) return cy.wrap(initial, { log: false });
 
-        return scrollIntoViewIfNeeded(selectors[0] as string, options.scrollOffset ?? 120)
+        // cy.scrollIntoView only reaches the top document, so a target inside a
+        // frame is left where it is. The box is still drawn correctly; it may
+        // just sit outside a viewport capture.
+        const firstSpec = specs[0];
+        if (typeof firstSpec !== 'string') return cy.wrap(initial, { log: false });
+
+        return scrollIntoViewIfNeeded(firstSpec, options.scrollOffset ?? 120)
           // Re-measure: the rects from before the scroll are now meaningless.
-          .then(() => cy.window({ log: false }).then((w) => measureTargets(w, selectors)));
+          .then(() => cy.window({ log: false }).then((w) => measureTargets(w, specs)));
       })
       .then((measurement: DomMeasurement) => {
         let screenshotPath: string | undefined;
@@ -122,11 +136,19 @@ declare global {
   namespace Cypress {
     interface Chainable {
       /**
-       * Screenshot the page with an accurate box drawn around `selector`.
+       * Screenshot the page with an accurate box drawn around the target.
+       *
+       * A target is a CSS selector, or `{ frame, selector }` to reach into one
+       * or more nested iframes. An array annotates several at once.
+       *
+       *   cy.annotate('#promo-apply')
+       *   cy.annotate({ frame: 'iframe#checkout', selector: '.pay-button' })
+       *   cy.annotate(['#total', { frame: 'iframe#checkout', selector: '.pay' }])
+       *
        * Yields the annotation result, including where the box was drawn.
        */
       annotate(
-        selector: string | string[],
+        target: AnnotateTargetSpec | AnnotateTargetSpec[],
         options?: AnnotateCommandOptions,
       ): Chainable<AnnotateTaskResult>;
     }

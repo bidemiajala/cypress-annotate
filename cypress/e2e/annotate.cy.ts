@@ -136,3 +136,83 @@ describe('cy.annotate', () => {
     cy.annotate('#definitely-not-here', { scrollIntoView: false, name: 'missing' });
   });
 });
+
+describe('iframe targets', () => {
+  /**
+   * The frame carries both a border and padding, because the offset is the
+   * frame's content origin and not its border box. A version that added only
+   * `frameRect.left` would be 30px out on every axis here and would still look
+   * plausible in a screenshot.
+   */
+  it('offsets by the frame content origin, not its border box', () => {
+    cy.visit('/cypress-iframe.html');
+
+    cy.annotate({ frame: 'iframe#checkout', selector: '#pay' }, {
+      ...EXACT,
+      label: 'Inside the frame',
+      name: 'iframe-target',
+    }).then((result) => {
+      expect(result.warnings, 'no warnings').to.deep.equal([]);
+
+      const rect = result.drawnRects[0];
+      expect(rect, 'a rect was drawn').to.not.equal(undefined);
+
+      // left: frame 90 + border 12 + padding 18 + 60 inside the frame = 180.
+      // top:  frame 140 + border 12 + padding 18 + 80 inside the frame = 250.
+      expect(rect!.x / result.scale, 'x in CSS px').to.be.closeTo(180, TOLERANCE_PX);
+      expect(rect!.y / result.scale, 'y in CSS px').to.be.closeTo(250, TOLERANCE_PX);
+
+      // And the box is genuinely on the painted element, not merely at
+      // coordinates that happen to add up.
+      const probe = {
+        x: Math.round(rect!.x + rect!.width / 2),
+        y: Math.round(rect!.y + rect!.height / 2),
+      };
+      cy.task<{ sampled: string; backgroundDistance: number; painted: PixelRect | null }>(
+        'probeAndScan',
+        { path: result.rawPath, probe, background: PAGE_BACKGROUND },
+      ).then(({ sampled, backgroundDistance, painted }) => {
+        expect(backgroundDistance, `box centre sampled ${sampled}`).to.be.greaterThan(60);
+        expect(painted, 'painted region found').to.not.equal(null);
+        expect(painted!.width / result.scale, 'painted width').to.be.closeTo(200, TOLERANCE_PX);
+        expect(painted!.height / result.scale, 'painted height').to.be.closeTo(48, TOLERANCE_PX);
+      });
+    });
+  });
+
+  it('measures a frame that is scrolled internally', () => {
+    cy.visit('/cypress-iframe.html');
+
+    cy.window({ log: false }).then((win) => {
+      const frame = win.document.querySelector('iframe#checkout') as HTMLIFrameElement;
+      frame.contentWindow!.scrollTo(0, 40);
+    });
+
+    cy.annotate({ frame: 'iframe#checkout', selector: '#pay' }, {
+      ...EXACT,
+      label: 'After internal scroll',
+      name: 'iframe-scrolled',
+    }).then((result) => {
+      expect(result.warnings, 'no warnings').to.deep.equal([]);
+      const rect = result.drawnRects[0];
+      // A rect measured inside the frame is already relative to that frame's
+      // viewport, so the frame's own scroll needs no correction. y moves up by
+      // exactly the 40px scrolled, and nothing else changes.
+      expect(rect!.y / result.scale, 'y after 40px of frame scroll')
+        .to.be.closeTo(210, TOLERANCE_PX);
+      expect(rect!.x / result.scale, 'x is unaffected').to.be.closeTo(180, TOLERANCE_PX);
+    });
+  });
+
+  it('fails loudly on an unreachable frame rather than drawing a wrong box', () => {
+    cy.visit('/cypress-iframe.html');
+    cy.on('fail', (error) => {
+      expect(error.message).to.match(/frame not found: iframe#missing/);
+      return false;
+    });
+    cy.annotate({ frame: 'iframe#missing', selector: '#pay' }, {
+      scrollIntoView: false,
+      name: 'iframe-unresolvable',
+    });
+  });
+});
