@@ -210,6 +210,35 @@ jobs:
             }
           '
 
+      # The CLI is only reachable by consumers through the bin field, and its
+      # one hard requirement, playwright, is an optional peer nobody installing
+      # the Cypress plugin will have. Both halves are checked: --help works with
+      # no peers at all, and asking it to do real work explains what to install
+      # rather than dumping a module-loader stack.
+      - name: CLI is runnable from an install
+        working-directory: /tmp/pkg
+        run: |
+          npx cypress-annotate --help > /tmp/help.txt
+          grep -q "Usage: cypress-annotate" /tmp/help.txt
+          echo "ok   --help exits 0 with no peers installed"
+
+          set +e
+          OUT=$(npx cypress-annotate --url https://example.com --selector a 2>&1)
+          CODE=$?
+          set -e
+          if [ "$CODE" -eq 0 ]; then
+            echo "FAIL expected a non-zero exit without playwright installed"
+            exit 1
+          fi
+          case "$OUT" in
+            *"npm install playwright"*)
+              echo "ok   missing playwright explains itself and exits $CODE" ;;
+            *)
+              echo "FAIL unhelpful error without playwright:"
+              echo "$OUT"
+              exit 1 ;;
+          esac
+
       - name: Require each entry point from CommonJS
         working-directory: /tmp/pkg
         run: |

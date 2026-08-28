@@ -382,6 +382,24 @@ present and importing each entry point for real. CI now does that on every push.
   coordinate rule 2, which the plugin sidesteps by capturing the viewport by
   default.
 
+## The CLI
+
+Installing the package puts a `cypress-annotate` binary on your path. It drives
+the Playwright pipeline rather than the Cypress plugin, so it needs the optional
+peer:
+
+```bash
+npm install playwright
+npx playwright install chromium
+
+npx cypress-annotate --url https://example.com --selector 'a' --label 'Broken link'
+npx cypress-annotate --help
+```
+
+Run it without playwright and it says so, along with the two commands that fix
+it. `--selector` and `--label` are repeatable and pair up in order, and
+`iframe#pay >>> .btn` reaches into a frame.
+
 ## Also in this package
 
 The same coordinate engine powers two things the Cypress plugin never touches: a

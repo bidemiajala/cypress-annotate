@@ -1,10 +1,11 @@
+#!/usr/bin/env node
 import { writeFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 import { captureAnnotated } from './index.js';
 import type { Annotation, ScreenshotMode } from './types.js';
 
 const USAGE = `
-Usage: npm run annotate -- --url <url> --selector <css> [options]
+Usage: cypress-annotate --url <url> --selector <css> [options]
 
   --url <url>              Page to open (http(s):// or file://).
   --selector <css>         Element to annotate. Repeatable.
@@ -53,6 +54,16 @@ const annotations: Annotation[] = values.selector.map((selector, i) => ({
   shape: values.shape as Annotation['shape'],
 }));
 
+/**
+ * A CLI should print what went wrong and nothing else. Without this, a missing
+ * playwright surfaces as an unhandled rejection: the useful sentence buried in
+ * a Node module-loader stack, plus the whole `cause` chain printed underneath.
+ */
+function fail(error: unknown): never {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exit(1);
+}
+
 const result = await captureAnnotated(values.url, annotations, {
   mode: values.mode as ScreenshotMode,
   viewport: { width: Number(values.width), height: Number(values.height) },
@@ -62,9 +73,9 @@ const result = await captureAnnotated(values.url, annotations, {
     ...(values.color ? { color: values.color } : {}),
     ...(values.dim ? { dimOutside: Number(values.dim) } : {}),
   },
-});
+}).catch(fail);
 
-await writeFile(values.out, result.image);
+await writeFile(values.out, result.image).catch(fail);
 
 if (values.json) {
   console.log(
