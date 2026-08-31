@@ -15,6 +15,5 @@
     "rootDir": "src",
     "types": ["node"]
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["src/browser/**"]
+  "include": ["src/**/*.ts"]
 }

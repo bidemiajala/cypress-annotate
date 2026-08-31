@@ -1,12 +1,13 @@
 {
   "name": "cypress-annotate",
-  "version": "0.4.0",
-  "description": "Annotate Cypress screenshots and failed-test runs with pixel-accurate boxes, pointing at exactly what broke.",
+  "version": "1.0.0",
+  "description": "Draw a box on exactly what failed. Every failed Cypress test gets an annotated screenshot, in CI, with no AI and no browser download.",
   "keywords": [
     "cypress",
     "cypress-plugin",
     "cypress-screenshot",
     "screenshot",
+    "screenshot-annotation",
     "annotate",
     "annotation",
     "test-failure",
@@ -16,15 +17,12 @@
     "e2e-testing",
     "visual-testing",
     "test-reporting",
+    "test-artifacts",
     "ci",
+    "github-actions",
     "cypress-cloud",
     "bounding-box",
-    "pixel-accurate",
-    "playwright",
-    "ai",
-    "llm",
-    "claude",
-    "agent"
+    "pixel-accurate"
   ],
   "license": "MIT",
   "author": "bidemiajala",
@@ -42,21 +40,12 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "bin": {
-    "cypress-annotate": "./dist/cli.js"
-  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.js",
       "default": "./dist/index.js"
-    },
-    "./reasoner": {
-      "types": "./dist/claude-reasoner.d.ts",
-      "import": "./dist/claude-reasoner.js",
-      "require": "./dist/claude-reasoner.js",
-      "default": "./dist/claude-reasoner.js"
     },
     "./cypress/task": {
       "types": "./dist/cypress/task.d.ts",
@@ -80,9 +69,6 @@
   },
   "typesVersions": {
     "*": {
-      "reasoner": [
-        "./dist/claude-reasoner.d.ts"
-      ],
       "cypress/task": [
         "./dist/cypress/task.d.ts"
       ],
@@ -96,7 +82,6 @@
   },
   "files": [
     "dist",
-    "src/browser",
     "skills",
     "DOCS",
     "AGENTS.md",
@@ -104,47 +89,29 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && node scripts/copy-browser-assets.js",
+    "build": "tsc -p tsconfig.build.json",
     "prepare": "npm run build",
-    "annotate": "tsx src/cli.ts",
-    "verify": "tsx scripts/verify.ts",
-    "verify:image": "tsx scripts/verify-image.ts",
-    "annotate-shot": "tsx scripts/annotate-shot.ts",
-    "test:reasoner": "tsx scripts/test-reasoner.ts",
     "test:failure-selector": "tsx scripts/test-failure-selector.ts",
     "test:svg-escaping": "tsx scripts/test-svg-escaping.ts",
     "test:cypress": "tsx scripts/run-cypress.ts run --e2e --spec cypress/e2e/annotate.cy.ts",
     "test:cypress-failures": "tsx scripts/test-cypress-failures.ts",
-    "explain-failures": "tsx scripts/explain-failures.ts",
     "cypress:open": "tsx scripts/run-cypress.ts open",
-    "find-bugs": "tsx scripts/find-bugs.ts",
-    "demo": "tsx scripts/find-bugs.ts --url fixtures/buggy-checkout.html --replay fixtures/buggy-checkout.expected.json --out-dir out/bugs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "sharp": "^0.35.4"
   },
   "peerDependencies": {
-    "@anthropic-ai/sdk": "^0.120.0",
-    "cypress": ">=13",
-    "playwright": "^1.56.1"
+    "cypress": ">=13"
   },
   "peerDependenciesMeta": {
-    "@anthropic-ai/sdk": {
-      "optional": true
-    },
     "cypress": {
-      "optional": true
-    },
-    "playwright": {
       "optional": true
     }
   },
   "devDependencies": {
-    "@anthropic-ai/sdk": "^0.120.0",
     "@types/node": "^24.10.1",
     "cypress": "^15.19.0",
-    "playwright": "^1.56.1",
     "tsx": "^4.20.7",
     "typescript": "^5.9.3"
   }
