@@ -43,4 +43,10 @@ export interface AnnotationStyle {
   dimOutside?: number;
   labelFontSize?: number;
   labelColor?: string;
+  /** Label pill background. Defaults to `color`, so one value themes both. */
+  labelBackground?: string;
+  /** CSS font-family for the label. */
+  labelFontFamily?: string;
+  /** CSS font-weight for the label. */
+  labelFontWeight?: string | number;
 }

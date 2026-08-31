@@ -93,7 +93,7 @@
     "prepare": "npm run build",
     "test:failure-selector": "tsx scripts/test-failure-selector.ts",
     "test:svg-escaping": "tsx scripts/test-svg-escaping.ts",
-    "test:cypress": "tsx scripts/run-cypress.ts run --e2e --spec cypress/e2e/annotate.cy.ts",
+    "test:cypress": "tsx scripts/run-cypress.ts run --e2e --spec 'cypress/e2e/annotate.cy.ts,cypress/e2e/theme.cy.ts'",
     "test:cypress-failures": "tsx scripts/test-cypress-failures.ts",
     "cypress:open": "tsx scripts/run-cypress.ts open",
     "typecheck": "tsc --noEmit"

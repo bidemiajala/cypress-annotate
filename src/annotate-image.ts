@@ -1,5 +1,11 @@
 import sharp from 'sharp';
-import { buildOverlaySvg, compositeOverlay, type DrawSpec, type ResolvedStyle } from './draw.js';
+import {
+  buildOverlaySvg,
+  compositeOverlay,
+  DEFAULT_FONT_STACK,
+  type DrawSpec,
+  type ResolvedStyle,
+} from './draw.js';
 import type {
   AnnotationStyle,
   CssRect,
@@ -66,10 +72,25 @@ const DEFAULT_STYLE: Required<AnnotationStyle> = {
   dimOutside: 0,
   labelFontSize: 14,
   labelColor: '#FFFFFF',
+  labelBackground: '',
+  labelFontFamily: DEFAULT_FONT_STACK,
+  labelFontWeight: 600,
 };
 
+/**
+ * Merge style layers, lowest priority first. `labelBackground` defaults to
+ * whatever `color` resolved to, so setting one brand colour themes the outline
+ * and the label pill together, and setting both still works.
+ */
+
 export function resolveStyle(...layers: (AnnotationStyle | undefined)[]): Required<AnnotationStyle> {
-  return Object.assign({}, DEFAULT_STYLE, ...layers.map((l) => l ?? {}));
+  const merged: Required<AnnotationStyle> = Object.assign(
+    {},
+    DEFAULT_STYLE,
+    ...layers.map((l) => l ?? {}),
+  );
+  if (!merged.labelBackground) merged.labelBackground = merged.color;
+  return merged;
 }
 
 /** Convert CSS-pixel style values into image pixels at the capture's scale. */
@@ -81,6 +102,9 @@ function toDeviceStyle(style: Required<AnnotationStyle>, scale: number): Resolve
     dimOutside: style.dimOutside,
     labelFontSize: style.labelFontSize * scale,
     labelColor: style.labelColor,
+    labelBackground: style.labelBackground,
+    labelFontFamily: style.labelFontFamily,
+    labelFontWeight: style.labelFontWeight,
   };
 }
 
