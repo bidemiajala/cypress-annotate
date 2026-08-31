@@ -17,23 +17,30 @@ else in the pipeline can recover from being wrong. This it cannot.
 
 | Path | What it is |
 | --- | --- |
-| `src/cypress/` | The Cypress plugin. Needs no browser automation library. |
-| `src/annotate-image.ts`, `src/draw.ts` | The shared engine. sharp and SVG, no browser. |
-| `src/annotate.ts`, `src/measure.ts`, `src/pipeline.ts`, `src/finder.ts` | The Playwright pipeline. |
-| `src/claude-reasoner.ts` | The optional reasoning layer. |
-| `scripts/` | Every suite, plus the CLIs. No test framework, they are plain scripts. |
-| `fixtures/` | Flat-coloured targets the alignment suite scans for. |
+| `src/cypress/` | The Cypress plugin. Browser-side measurement plus the Node task. |
+| `src/annotate-image.ts`, `src/draw.ts` | The engine. sharp and SVG, no browser, no Cypress. |
+| `src/cypress/config.ts` | The `env.annotate` block. One place to add a new option. |
+| `cypress/e2e/` | The suites that assert pixels. `theme.cy.ts` covers the config block. |
+| `scripts/` | The non-browser suites and the Cypress runner. No test framework, plain scripts. |
+| `fixtures/` | Flat-coloured targets the suites scan for. |
 
-Three entry points, deliberately independent: the root, `./reasoner`, and
-`./cypress/*`. `playwright`, `@anthropic-ai/sdk` and `cypress` are all optional
-peer dependencies.
+Four entry points: the root, and `./cypress/task`, `./cypress/commands`,
+`./cypress/failure-hook`. They are listed one by one rather than wildcarded, so
+the five other modules under `dist/cypress` stay internal, and the `package
+install` CI job asserts that.
 
-**Do not import `ClaudeReasoner` into anything the root barrel re-exports.** That
-already shipped as a bug once. An ES module evaluates a whole file's top-level
-code the moment anything is imported from it, so putting the reasoner beside a
-re-exported utility made every root import throw `ERR_MODULE_NOT_FOUND` for the
-Anthropic SDK, even for callers who never touched it. The `package install` CI
-job exists to catch a repeat.
+`sharp` is the only dependency. `cypress` is an optional peer.
+
+**Do not put a top-level import of an optional peer beside anything the root
+barrel re-exports.** That already shipped as a bug once, when `ClaudeReasoner`
+sat next to a re-exported utility and made every root import throw
+`ERR_MODULE_NOT_FOUND` for the Anthropic SDK, even for callers who never touched
+it. An ES module evaluates a whole file's top-level code the moment anything is
+imported from it.
+
+The Playwright pipeline and the Claude reasoning layer used to live here. They
+are now in the `annotate-agent` repo, which also owns the wider alignment
+suites.
 
 ## Before you claim something works
 
@@ -42,24 +49,23 @@ say so explicitly, and they mean it.
 
 ```bash
 npm run typecheck
-npm run test:cypress            # 7 cases, real Cypress
-npm run test:failure-selector   # 12 cases, no browser
+npm run test:cypress            # 12 cases, real Cypress
 npm run test:cypress-failures   # 4 cases end to end, real Cypress
-npm run test:svg-escaping       # 5 cases
-npm run verify                  # alignment, 20 cases, needs playwright chromium
-npm run verify:image            # 10 cases, needs playwright chromium
+npm run test:failure-selector   # 12 cases, no browser
+npm run test:svg-escaping       # 9 cases
 ```
 
-Eyeballing a screenshot does not prove pixel accuracy. `scripts/verify.ts` scans
-for a target's flat colour, recovers its true pixel footprint, and compares that
-against the computed rect. Add a case there rather than looking at an image.
+Eyeballing a screenshot does not prove pixel accuracy. The Cypress suites scan
+the image for a target's flat colour, recover its true pixel footprint, and
+compare that against the computed rect. Add a case there rather than looking at
+an image. The same trick proves the theme reaches the pixels: `theme.cy.ts`
+samples the drawn stroke and fails if the config block did nothing.
 
 ## Writing
 
 No em dashes or en dashes, in code comments, docs, or commit messages. Use a
-spaced hyphen, a comma, or parentheses. CI fails the build on one. The single
-exemption is the element-inventory separator in `src/inventory.ts`, which is
-program output that goes into a model's prompt.
+spaced hyphen, a comma, or parentheses. CI fails the build on one, with no
+exemptions.
 
 Avoid the "it's not X, it's Y" construction, including the compressed trailing
 form ("a mechanical pass, no rewording required").
