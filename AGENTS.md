@@ -61,6 +61,12 @@ compare that against the computed rect. Add a case there rather than looking at
 an image. The same trick proves the theme reaches the pixels: `theme.cy.ts`
 samples the drawn stroke and fails if the config block did nothing.
 
+## Releasing
+
+Bump the version and add its `## <version>` section to `CHANGELOG.md` in the same
+commit. The publish job uses that section as the GitHub release body and fails
+the release if it is missing.
+
 ## Writing
 
 No em dashes or en dashes, in code comments, docs, or commit messages. Use a

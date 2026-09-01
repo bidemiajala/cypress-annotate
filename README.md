@@ -157,4 +157,5 @@ times into one image. Viewport capture is the default for that reason.
 [DOCS/internals.md](DOCS/internals.md) has the coordinate rules, the traps worth
 knowing before you hit them, and how alignment is verified against painted
 pixels. `skills/cypress-annotate/SKILL.md` is the same material for a coding
-agent. MIT.
+agent. [CHANGELOG.md](CHANGELOG.md) covers what changed in 1.0.0 and how to
+migrate. MIT.

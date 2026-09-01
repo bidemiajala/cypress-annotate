@@ -301,14 +301,22 @@ jobs:
         if: steps.version.outputs.publish == 'true'
         run: npm publish --access public
 
+      # The release body is the version's own CHANGELOG section, so npm and the
+      # releases page carry the migration notes rather than a list of commits.
+      # A missing section fails the release: the version bump and its entry
+      # belong in the same commit, and this is where that gets enforced.
       - name: Tag and release
         if: steps.version.outputs.publish == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |
+          awk -v v="## $VERSION" '$0 == v {f=1; next} f && /^## /{exit} f' \
+            CHANGELOG.md > /tmp/notes.md
+          if [ ! -s /tmp/notes.md ]; then
+            echo "No '## $VERSION' section in CHANGELOG.md. Add one and re-run."
+            exit 1
+          fi
           git tag "v$VERSION"
           git push origin "v$VERSION"
-          gh release create "v$VERSION" \
-            --title "v$VERSION" \
-            --generate-notes
+          gh release create "v$VERSION" --title "v$VERSION" --notes-file /tmp/notes.md
