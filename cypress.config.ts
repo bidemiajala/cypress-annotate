@@ -15,6 +15,14 @@ import type { PixelRect } from './src/types.js';
 
 export default defineConfig({
   projectId: 'qeshtt',
+  env: {
+    // Project-wide annotation defaults, the same block the README documents.
+    // theme.cy.ts asserts these actually reach the drawn pixels, and that a
+    // per-call style still wins over them.
+    annotate: {
+      style: { color: '#7C3AED', strokeWidth: 6 },
+    },
+  },
   viewportWidth: 1280,
   // Matches the headless Electron window, so the capture is not clipped.
   viewportHeight: 720,
@@ -32,7 +40,7 @@ export default defineConfig({
 
     async setupNodeEvents(on, config) {
       // The plugin itself: one call is the whole Node-side setup.
-      registerAnnotateTasks(on);
+      registerAnnotateTasks(on, config);
 
       // Everything below is this repo's own test rig, not part of the plugin.
       const { url } = await startStaticServer(join(config.projectRoot, 'fixtures'));

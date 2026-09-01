@@ -1,4 +1,5 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { dirname } from 'node:path';
 import type { PageMetrics, PixelRect } from '../types.js';
 import type { DomMeasurement } from './measure-dom.js';
 
@@ -41,14 +42,24 @@ export interface AppendFailureArgs {
   record: FailureRecord;
 }
 
-export async function appendFailureRecord({ reportPath, record }: AppendFailureArgs): Promise<null> {
-  let existing: FailureRecord[] = [];
+/**
+ * Append one record to a JSON array on disk, creating the file and its parent
+ * directory if neither exists. Read-modify-write is safe here because Cypress
+ * runs tasks one at a time, in the single Node process behind the run.
+ */
+export async function appendRecord<T>(path: string, record: T): Promise<void> {
+  let existing: T[] = [];
   try {
-    existing = JSON.parse(await readFile(reportPath, 'utf8')) as FailureRecord[];
+    existing = JSON.parse(await readFile(path, 'utf8')) as T[];
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    await mkdir(dirname(path), { recursive: true });
   }
   existing.push(record);
-  await writeFile(reportPath, JSON.stringify(existing, null, 2));
+  await writeFile(path, JSON.stringify(existing, null, 2));
+}
+
+export async function appendFailureRecord({ reportPath, record }: AppendFailureArgs): Promise<null> {
+  await appendRecord(reportPath, record);
   return null;
 }

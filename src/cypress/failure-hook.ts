@@ -2,6 +2,7 @@
 import { describeFailure, recoverFailure, type CommandLike, type CypressLikeError } from './failure-selector.js';
 import { collectInventory, measureTargets, readMetrics, type InventoryItem } from './measure-dom.js';
 import { isFullyVisible, scrollIntoViewIfNeeded } from './scroll-into-view.js';
+import { readAnnotateConfig, DEFAULT_REPORT_PATH } from './config.js';
 import type { AnnotateTaskResult } from './task.js';
 import type { FailureRecord } from './failure-report.js';
 import type { AnnotationStyle, PageMetrics } from '../types.js';
@@ -12,8 +13,6 @@ export interface FailureCaptureOptions {
   reportPath?: string;
   style?: AnnotationStyle;
 }
-
-const DEFAULT_REPORT_PATH = 'out/cypress/failures.json';
 
 function slugify(text: string): string {
   return text.replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase().slice(0, 60) || 'failure';
@@ -42,10 +41,13 @@ function slugify(text: string): string {
  * and it becomes ambiguous which one the DOM measurement actually matches.
  */
 export function registerFailureCapture(options: FailureCaptureOptions = {}): void {
-  const reportPath = options.reportPath ?? DEFAULT_REPORT_PATH;
-
   afterEach(function (this: Mocha.Context) {
     if (this.currentTest?.state !== 'failed') return;
+
+    // Read inside the hook rather than at registration: the support file is
+    // evaluated before Cypress has finished setting up env for the spec.
+    const defaults = readAnnotateConfig();
+    const reportPath = options.reportPath ?? defaults.reportPath ?? DEFAULT_REPORT_PATH;
 
     // Read failure state before issuing any cy.* command below - those mutate
     // cy.state('current'), so this has to happen first and synchronously.
@@ -144,7 +146,11 @@ export function registerFailureCapture(options: FailureCaptureOptions = {}): voi
               measurement: { metrics, targets: [target!] },
               labels: [label],
               capture: 'viewport',
-              style: options.style,
+              style: { ...defaults.style, ...options.style },
+              keepRaw: defaults.keepRaw,
+              manifestPath: defaults.manifestPath,
+              spec: Cypress.spec.relative,
+              test: testTitle,
             }) as Cypress.Chainable<AnnotateTaskResult | null>;
           })
           .then((annotateResult: AnnotateTaskResult | null) => {

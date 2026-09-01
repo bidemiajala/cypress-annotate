@@ -23,8 +23,8 @@ import { registerAnnotateTasks } from 'cypress-annotate/cypress/task';
 
 export default defineConfig({
   e2e: {
-    setupNodeEvents(on) {
-      registerAnnotateTasks(on);
+    setupNodeEvents(on, config) {
+      registerAnnotateTasks(on, config);
     },
   },
 });
@@ -164,9 +164,44 @@ colour from the image rather than trusting the stylesheet.
 `ELECTRON_RUN_AS_NODE=1`, which VS Code's extension host does. Unset it before
 running Cypress.
 
+## Project-wide defaults
+
+Colours and the other options are settable once, in cypress.config, so a team
+does not repeat them at every call:
+
+```ts
+export default defineConfig({
+  env: {
+    annotate: {
+      style: { color: '#7C3AED', strokeWidth: 4, labelBackground: '#1F1F23' },
+      keepRaw: true,
+    },
+  },
+});
+```
+
+Cypress serialises `env` into the browser, so the block reaches `cy.annotate()`
+and the failure hook alike, and `CYPRESS_annotate='{"style":{...}}'` overrides it
+for one CI job. Layers merge lowest first: built-in defaults, this block, the
+options passed to a single call, then a per-target style. A misspelled key warns
+rather than being silently ignored.
+
+Style fields: `color`, `strokeWidth`, `padding`, `radius`, `dimOutside`,
+`labelFontSize`, `labelColor`, `labelBackground`, `labelFontFamily`,
+`labelFontWeight`. Run fields: `shape`, `crop`, `cropPadding`, `keepRaw`,
+`scrollOffset`, `manifestPath`, `reportPath`.
+
+## In CI
+
+The annotated PNG overwrites the screenshot Cypress took, so it is what
+`upload-artifact` collects and what `cypress run --record` sends to Cypress
+Cloud. There is no Cloud API involved and nothing extra to configure.
+
+Each run also writes `out/cypress/annotations.json`, one record per annotated
+screenshot, and on GitHub Actions appends a table of it to the job summary.
+
 ## What this does not do
 
-No LLM is involved in either path above, and no API key is needed. The package
-also ships an optional Claude-based reasoning layer and a Playwright pipeline for
-finding bugs you haven't identified yet. Those are separate entry points that
-install nothing by default. See `DOCS/pipeline.md` in the package.
+No LLM is involved in either path above, and no API key is needed. For pointing
+a model at a page so it works out what is wrong before anything gets drawn, see
+the separate `annotate-agent` package.

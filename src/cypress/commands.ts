@@ -6,6 +6,7 @@ import {
   type DomMeasurement,
 } from './measure-dom.js';
 import { isFullyVisible, scrollIntoViewIfNeeded } from './scroll-into-view.js';
+import { readAnnotateConfig } from './config.js';
 import type { AnnotateTaskResult } from './task.js';
 import type { AnnotationStyle, ShapeKind } from '../types.js';
 
@@ -19,6 +20,11 @@ import type { AnnotationStyle, ShapeKind } from '../types.js';
  * rectangle is only valid for the scroll position it was measured at.
  */
 
+/**
+ * Every field here can also be set once for the whole project, under
+ * `env.annotate` in cypress.config. A value passed to a single call wins over
+ * the project default, which wins over the built-in one.
+ */
 export interface AnnotateCommandOptions {
   /** One per selector, in order. */
   label?: string | string[];
@@ -56,6 +62,9 @@ function slugify(text: string): string {
 Cypress.Commands.add(
   'annotate',
   (target: AnnotateTargetSpec | AnnotateTargetSpec[], options: AnnotateCommandOptions = {}) => {
+    // Project defaults from env.annotate in cypress.config, so a team sets its
+    // colour once. Anything passed here wins over them.
+    const defaults = readAnnotateConfig();
     const specs = Array.isArray(target) ? target : [target];
     const labels = options.label === undefined
       ? []
@@ -89,7 +98,7 @@ Cypress.Commands.add(
         const firstSpec = specs[0];
         if (typeof firstSpec !== 'string') return cy.wrap(initial, { log: false });
 
-        return scrollIntoViewIfNeeded(firstSpec, options.scrollOffset ?? 120)
+        return scrollIntoViewIfNeeded(firstSpec, options.scrollOffset ?? defaults.scrollOffset ?? 120)
           // Re-measure: the rects from before the scroll are now meaningless.
           .then(() => cy.window({ log: false }).then((w) => measureTargets(w, specs)));
       })
@@ -114,11 +123,14 @@ Cypress.Commands.add(
               measurement,
               labels,
               capture,
-              crop: options.crop,
-              cropPadding: options.cropPadding,
-              shape: options.shape,
-              style: options.style,
-              keepRaw: options.keepRaw,
+              crop: options.crop ?? defaults.crop,
+              cropPadding: options.cropPadding ?? defaults.cropPadding,
+              shape: options.shape ?? defaults.shape,
+              style: { ...defaults.style, ...options.style },
+              keepRaw: options.keepRaw ?? defaults.keepRaw,
+              manifestPath: defaults.manifestPath,
+              spec: Cypress.spec.relative,
+              test: Cypress.currentTest?.titlePath?.join(' > ') ?? name,
             });
           })
           .then((result: AnnotateTaskResult) => {

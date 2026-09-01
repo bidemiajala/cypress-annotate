@@ -9,6 +9,9 @@ export interface ResolvedStyle {
   dimOutside: number;
   labelFontSize: number;
   labelColor: string;
+  labelBackground: string;
+  labelFontFamily: string;
+  labelFontWeight: string | number;
 }
 
 export interface DrawSpec {
@@ -18,7 +21,8 @@ export interface DrawSpec {
   style: ResolvedStyle;
 }
 
-const FONT_STACK = "-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif";
+export const DEFAULT_FONT_STACK =
+  "-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif";
 
 function escapeXml(text: string): string {
   return text.replace(/[<>&'"]/g, (c) => {
@@ -38,7 +42,9 @@ function round(n: number): string {
 
 /**
  * Approximate rendered text width. librsvg gives us no measurement API, so the
- * label pill is sized from an average glyph ratio and generous padding.
+ * label pill is sized from an average glyph ratio and generous padding. The
+ * ratio is tuned for the default sans stack, so a very wide or very narrow
+ * custom family will wrap a little early or a little late.
  */
 function estimateTextWidth(text: string, fontSize: number): number {
   return text.length * fontSize * 0.58;
@@ -162,8 +168,9 @@ function labelShape(
 
   return (
     `<rect x="${round(pillX)}" y="${round(pillY)}" width="${round(pillWidth)}" height="${round(pillHeight)}" ` +
-    `rx="${round(Math.min(pillHeight / 2, fontSize * 0.5))}" fill="${escapeXml(style.color)}" />` +
-    `<text font-family="${FONT_STACK}" font-size="${round(fontSize)}" font-weight="600" ` +
+    `rx="${round(Math.min(pillHeight / 2, fontSize * 0.5))}" fill="${escapeXml(style.labelBackground)}" />` +
+    `<text font-family="${escapeXml(style.labelFontFamily)}" font-size="${round(fontSize)}" ` +
+    `font-weight="${escapeXml(String(style.labelFontWeight))}" ` +
     `fill="${escapeXml(style.labelColor)}" xml:space="preserve">${tspans}</text>`
   );
 }

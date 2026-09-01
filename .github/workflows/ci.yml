@@ -31,7 +31,6 @@ jobs:
       - run: npm run build
       - run: npm run test:failure-selector
       - run: npm run test:svg-escaping
-      - run: npm run test:reasoner
 
   # The Cypress plugin against a real Cypress run. Pinned to 22.04 because
   # Cypress's Electron needs libasound2, which 24.04 renamed to libasound2t64.
@@ -77,42 +76,12 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  # The alignment suites and the replayed reasoning demo. These drive a real
-  # headless Chromium, so they need Playwright's browser binaries.
-  pipeline:
-    name: alignment + pipeline
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-      - run: npm ci
-      - uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-      - run: npx playwright install --with-deps chromium
-      - run: npm run verify
-      - run: npm run verify:image
-      - run: npm run demo
-      - name: Upload alignment output on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: alignment-output
-          path: out
-          if-no-files-found: ignore
-          retention-days: 7
-
   # Regression test for the entry-point split. Packs the tarball, installs it
-  # into an empty project with no optional peers present, and imports each
-  # entry point for real. This is the exact bug that shipped once: ClaudeReasoner
-  # sharing a file with re-exported utilities meant importing anything at all
-  # from the root threw ERR_MODULE_NOT_FOUND for the Anthropic SDK. Reading the
-  # code does not catch it, because an ES module evaluates a whole file's
-  # top-level code the moment anything is imported from it.
+  # into an empty project with cypress absent, and imports each entry point for
+  # real. Reading the code does not catch this class of bug, because an ES
+  # module evaluates a whole file's top-level code the moment anything is
+  # imported from it, so one stray top-level import of an optional peer breaks
+  # every export that shares the file.
   package:
     name: package install
     runs-on: ubuntu-latest
@@ -135,7 +104,7 @@ jobs:
           npm install ./cypress-annotate-*.tgz
           echo "--- installed packages ---"
           ls node_modules | grep -v '^\.'
-          for forbidden in playwright cypress @anthropic-ai; do
+          for forbidden in cypress playwright @anthropic-ai; do
             if [ -e "node_modules/$forbidden" ]; then
               echo "FAIL: optional peer '$forbidden' was installed but should not have been"
               exit 1
@@ -158,20 +127,6 @@ jobs:
               }
               console.log(`ok   ${spec} (${Object.keys(mod).length} exports)`);
             }
-
-            // The reasoner is the one entry point that legitimately needs a peer.
-            // It must fail for that reason and no other.
-            try {
-              await import("cypress-annotate/reasoner");
-              console.error("FAIL cypress-annotate/reasoner imported without @anthropic-ai/sdk installed");
-              process.exit(1);
-            } catch (err) {
-              if (err.code !== "ERR_MODULE_NOT_FOUND") {
-                console.error(`FAIL reasoner threw ${err.code} instead of ERR_MODULE_NOT_FOUND`);
-                throw err;
-              }
-              console.log("ok   cypress-annotate/reasoner fails with ERR_MODULE_NOT_FOUND, as designed");
-            }
           '
 
       # 0.1.2 shipped a bug this step exists to prevent a repeat of: the exports
@@ -193,7 +148,7 @@ jobs:
               "cypress-annotate/cypress/scroll-into-view",
               "cypress-annotate/cypress/failure-selector",
               "cypress-annotate/cypress/failure-report",
-              "cypress-annotate/cypress/failure-explainer",
+              "cypress-annotate/cypress/config",
             ];
             for (const spec of internals) {
               try {
@@ -209,35 +164,6 @@ jobs:
               }
             }
           '
-
-      # The CLI is only reachable by consumers through the bin field, and its
-      # one hard requirement, playwright, is an optional peer nobody installing
-      # the Cypress plugin will have. Both halves are checked: --help works with
-      # no peers at all, and asking it to do real work explains what to install
-      # rather than dumping a module-loader stack.
-      - name: CLI is runnable from an install
-        working-directory: /tmp/pkg
-        run: |
-          npx cypress-annotate --help > /tmp/help.txt
-          grep -q "Usage: cypress-annotate" /tmp/help.txt
-          echo "ok   --help exits 0 with no peers installed"
-
-          set +e
-          OUT=$(npx cypress-annotate --url https://example.com --selector a 2>&1)
-          CODE=$?
-          set -e
-          if [ "$CODE" -eq 0 ]; then
-            echo "FAIL expected a non-zero exit without playwright installed"
-            exit 1
-          fi
-          case "$OUT" in
-            *"npm install playwright"*)
-              echo "ok   missing playwright explains itself and exits $CODE" ;;
-            *)
-              echo "FAIL unhelpful error without playwright:"
-              echo "$OUT"
-              exit 1 ;;
-          esac
 
       - name: Require each entry point from CommonJS
         working-directory: /tmp/pkg
@@ -266,8 +192,7 @@ jobs:
   # cjs-resolves-to-esm is ignored deliberately. It fires because require()
   # lands on an ESM file, which is a real error on old Node but not on the
   # versions this package supports, where require(esm) works. That trade is
-  # documented in the engines field, and a CommonJS twin build is blocked by
-  # import.meta.url in inventory.ts anyway.
+  # documented in the engines field.
   packaging:
     name: packaging lint
     runs-on: ubuntu-latest
@@ -317,9 +242,7 @@ jobs:
           if grep -rn $'[–—]' \
               --include='*.ts' --include='*.js' --include='*.md' \
               --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=out \
-              . \
-              | grep -v 'src/inventory.ts:144' \
-              | grep -vE ':\[e[0-9]+\] <'; then
+              .; then
             echo
             echo "Found an em dash or en dash. Use a spaced hyphen, a comma, or parentheses."
             exit 1
@@ -336,7 +259,7 @@ jobs:
   # Renaming this file breaks publishing until the setting is updated to match.
   publish:
     name: publish to npm
-    needs: [check, cypress, pipeline, package, packaging, audit, prose]
+    needs: [check, cypress, package, packaging, audit, prose]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
@@ -378,14 +301,22 @@ jobs:
         if: steps.version.outputs.publish == 'true'
         run: npm publish --access public
 
+      # The release body is the version's own CHANGELOG section, so npm and the
+      # releases page carry the migration notes rather than a list of commits.
+      # A missing section fails the release: the version bump and its entry
+      # belong in the same commit, and this is where that gets enforced.
       - name: Tag and release
         if: steps.version.outputs.publish == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |
+          awk -v v="## $VERSION" '$0 == v {f=1; next} f && /^## /{exit} f' \
+            CHANGELOG.md > /tmp/notes.md
+          if [ ! -s /tmp/notes.md ]; then
+            echo "No '## $VERSION' section in CHANGELOG.md. Add one and re-run."
+            exit 1
+          fi
           git tag "v$VERSION"
           git push origin "v$VERSION"
-          gh release create "v$VERSION" \
-            --title "v$VERSION" \
-            --generate-notes
+          gh release create "v$VERSION" --title "v$VERSION" --notes-file /tmp/notes.md

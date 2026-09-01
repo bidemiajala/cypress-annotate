@@ -1,10 +1,11 @@
 /**
  * Proves buildOverlaySvg() cannot be used to inject markup via caller-controlled
- * strings - label text and style.color/labelColor are both part of the public
- * API (annotate(), annotateImage(), cy.annotate(), and the CLI's --color flag
- * all set them), and buildOverlaySvg's own return value is exported public API
- * too, so a consumer could reasonably render it somewhere that isn't just
- * sharp's non-scripting SVG rasterizer.
+ * strings. Every string field on a style reaches an SVG attribute, and all of
+ * them are public API: annotateImage(), cy.annotate(), and the env.annotate
+ * block in cypress.config all set them, so a value can arrive from a config
+ * file nobody read closely. buildOverlaySvg's own return value is exported too,
+ * so a consumer could reasonably render it somewhere that is not sharp's
+ * non-scripting SVG rasterizer.
  */
 import assert from 'node:assert/strict';
 import { buildOverlaySvg } from '../src/draw.js';
@@ -32,7 +33,17 @@ function spec(overrides: Partial<DrawSpec> & { style: DrawSpec['style'] }): Draw
   };
 }
 
-const baseStyle = { color: '#FF3B30', strokeWidth: 3, radius: 6, dimOutside: 0, labelFontSize: 14, labelColor: '#FFF' };
+const baseStyle = {
+  color: '#FF3B30',
+  strokeWidth: 3,
+  radius: 6,
+  dimOutside: 0,
+  labelFontSize: 14,
+  labelColor: '#FFF',
+  labelBackground: '#FF3B30',
+  labelFontFamily: 'Helvetica, Arial, sans-serif',
+  labelFontWeight: 600,
+};
 
 check('a malicious color cannot break out of the stroke attribute', () => {
   const malicious = '" /><script>alert(1)</script><rect fill="';
@@ -76,6 +87,41 @@ check('the resulting SVG is well-formed XML even with a hostile label', () => {
   // emitted tags.
   const unescapedLt = (svg.match(/<(?!svg|\/svg|rect|\/rect|ellipse|line|polygon|text|\/text|tspan|\/tspan|path)/g) ?? []).length;
   assert.equal(unescapedLt, 0, 'found an unexpected raw "<" that is not one of our own emitted tags');
+});
+
+check('a malicious labelBackground cannot break out of the pill fill', () => {
+  const malicious = '"><script>alert(1)</script><rect fill="';
+  const svg = buildOverlaySvg(400, 200, [
+    spec({ label: 'hi', style: { ...baseStyle, labelBackground: malicious } }),
+  ]);
+  assert.ok(!svg.includes('<script>'), 'raw <script> tag leaked into the SVG unescaped');
+  assert.ok(svg.includes('&quot;&gt;&lt;script&gt;'), 'expected the escaped form to be present');
+});
+
+check('a malicious labelFontFamily cannot break out of the font-family attribute', () => {
+  const malicious = '" onload="alert(1)" x="';
+  const svg = buildOverlaySvg(400, 200, [
+    spec({ label: 'hi', style: { ...baseStyle, labelFontFamily: malicious } }),
+  ]);
+  assert.ok(!svg.includes('onload='.concat('"alert')), 'unescaped event handler attribute leaked in');
+  assert.ok(svg.includes('&quot; onload=&quot;'), 'expected the escaped form to be present');
+});
+
+check('a numeric labelFontWeight survives, and a hostile one is escaped', () => {
+  const plain = buildOverlaySvg(400, 200, [spec({ label: 'hi', style: baseStyle })]);
+  assert.ok(plain.includes('font-weight="600"'), 'a plain weight should pass through unchanged');
+
+  const svg = buildOverlaySvg(400, 200, [
+    spec({ label: 'hi', style: { ...baseStyle, labelFontWeight: '" onclick="alert(1)' } }),
+  ]);
+  assert.ok(!svg.includes('onclick='.concat('"alert')), 'unescaped event handler attribute leaked in');
+});
+
+check('a font family with the quotes real stacks need is escaped but still usable', () => {
+  const svg = buildOverlaySvg(400, 200, [
+    spec({ label: 'hi', style: { ...baseStyle, labelFontFamily: "'Helvetica Neue', Arial, sans-serif" } }),
+  ]);
+  assert.ok(svg.includes('&apos;Helvetica Neue&apos;, Arial, sans-serif'), 'expected the escaped stack');
 });
 
 console.log(`\n${passed}/${passed + failed} SVG-escaping checks passed.\n`);
