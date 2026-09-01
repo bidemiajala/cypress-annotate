@@ -105,6 +105,24 @@ applies a colour-profile shift. A fixture painted `#FF00E4` comes back as
 `rgb(234,51,221)`. Exact-colour assertions against your stylesheet will fail, so
 the suite samples the rendered colour out of the image and compares by distance.
 
+## Why the plugin registers no run events
+
+Cypress allows one handler per run event and silently keeps the last one
+registered. So `on('after:run', ...)` inside `registerAnnotateTasks` would stop
+a project's own `after:run` from ever firing, with no error and nothing in the
+output to explain it. Verified both directions against a real run before this
+was ruled out.
+
+The manifest and the GitHub job summary are therefore driven from the task.
+`cypress run` is one Node process, so the first write to a manifest path in that
+process is the run boundary: it truncates, and everything after it appends. The
+job summary gets its table header on the same first write and a row per
+annotation after that. Neither needs an event, so `registerAnnotateTasks` only
+ever registers tasks and composes with whatever else is in `setupNodeEvents`.
+
+In `cypress open` each spec run reuses the same process, so the manifest keeps
+appending until the runner is restarted.
+
 ## Publishing and packaging
 
 **The build runs automatically on install.** This repo ships TypeScript source

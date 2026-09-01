@@ -62,6 +62,44 @@ export interface AnnotateTaskResult {
   warnings: string[];
 }
 
+/**
+ * Manifest paths already written to by this process. Cypress runs the whole of
+ * `cypress run` in one Node process, so "first write of the process" is the
+ * run boundary, and using it means no before:run handler is needed to clear
+ * last run's records.
+ */
+const manifestsStarted = new Set<string>();
+
+/** Whether the job summary's table header has been written yet this process. */
+let summaryStarted = false;
+
+async function appendStepSummary(record: AnnotationRecord): Promise<void> {
+  const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+  if (!summaryPath) return;
+
+  const label = record.labels.join('; ') || '-';
+  const warnings = record.warnings.length > 0 ? ` (${record.warnings.length} warning(s))` : '';
+  const row =
+    `| ${record.test ?? record.spec ?? '-'} ` +
+    `| ${label.replace(/\|/g, '\\|')} ` +
+    `| \`${relative(process.cwd(), record.outPath)}\`${warnings} |\n`;
+
+  const header = summaryStarted
+    ? ''
+    : '### Annotated screenshots\n\n| Test | Label | Image |\n| --- | --- | --- |\n';
+  summaryStarted = true;
+  await appendFile(summaryPath, header + row);
+}
+
+async function recordAnnotation(manifestPath: string, record: AnnotationRecord): Promise<void> {
+  if (!manifestsStarted.has(manifestPath)) {
+    manifestsStarted.add(manifestPath);
+    await rm(manifestPath, { force: true });
+  }
+  await appendRecord(manifestPath, record);
+  await appendStepSummary(record);
+}
+
 export async function annotateScreenshot(args: AnnotateTaskArgs): Promise<AnnotateTaskResult> {
   const { screenshotPath, measurement } = args;
   if (!screenshotPath) throw new Error('annotateScreenshot: screenshotPath is required.');
@@ -116,7 +154,7 @@ export async function annotateScreenshot(args: AnnotateTaskArgs): Promise<Annota
   await writeFile(outPath, result.image);
 
   const warningsOut = [...warnings, ...result.warnings];
-  await appendRecord<AnnotationRecord>(args.manifestPath ?? DEFAULT_MANIFEST_PATH, {
+  await recordAnnotation(args.manifestPath ?? DEFAULT_MANIFEST_PATH, {
     spec: args.spec ?? null,
     test: args.test ?? null,
     labels: (args.labels ?? []).filter((label): label is string => Boolean(label)),
@@ -150,53 +188,9 @@ export type CypressPluginOn = (...args: never[]) => unknown;
 
 type TaskRegistrar = (event: 'task', tasks: Record<string, (arg: never) => unknown>) => void;
 
-type RunEventRegistrar = (event: 'before:run' | 'after:run', handler: () => unknown) => void;
-
-/** The `config` half of setupNodeEvents, narrowed to the bit read here. */
+/** The `config` half of setupNodeEvents. Accepted for forwards compatibility. */
 export interface AnnotateSetupConfig {
   env?: Record<string, unknown>;
-}
-
-/**
- * Appends a table of everything annotated to the GitHub Actions job summary, so
- * a run's output is visible on the job page without downloading the artifact.
- * Does nothing anywhere else, since GITHUB_STEP_SUMMARY is only set by Actions.
- */
-async function writeStepSummary(manifestPath: string): Promise<void> {
-  const summaryPath = process.env.GITHUB_STEP_SUMMARY;
-  if (!summaryPath) return;
-
-  let records: AnnotationRecord[];
-  try {
-    records = JSON.parse(await readFile(manifestPath, 'utf8')) as AnnotationRecord[];
-  } catch {
-    // No manifest means nothing was annotated. That is an ordinary run.
-    return;
-  }
-  if (records.length === 0) return;
-
-  const rows = records.map((record) => {
-    const label = record.labels.join('; ') || '-';
-    const warnings = record.warnings.length > 0 ? ` (${record.warnings.length} warning(s))` : '';
-    const cells = [
-      record.test ?? record.spec ?? '-',
-      label.replace(/\|/g, '\\|'),
-      `\`${relative(process.cwd(), record.outPath)}\`${warnings}`,
-    ];
-    return `| ${cells.join(' | ')} |`;
-  });
-
-  await appendFile(
-    summaryPath,
-    [
-      `### ${records.length} annotated screenshot${records.length === 1 ? '' : 's'}`,
-      '',
-      '| Test | Label | Image |',
-      '| --- | --- | --- |',
-      ...rows,
-      '',
-    ].join('\n'),
-  );
 }
 
 /**
@@ -204,13 +198,15 @@ async function writeStepSummary(manifestPath: string): Promise<void> {
  *
  *   setupNodeEvents(on, config) { registerAnnotateTasks(on, config); }
  *
- * Passing `config` is optional, and only affects where the run's manifest is
- * read back from for the CI job summary.
+ * Deliberately registers nothing but tasks. Cypress allows one handler per run
+ * event and silently keeps the last one registered, so taking `before:run` or
+ * `after:run` here would quietly stop a project's own handler from firing. The
+ * manifest and the job summary are driven from the task instead, which can be
+ * registered alongside anything.
+ *
+ * `config` is optional and currently unused.
  */
-export function registerAnnotateTasks(on: CypressPluginOn, config?: AnnotateSetupConfig): void {
-  const env = config?.env?.annotate as { manifestPath?: string } | undefined;
-  const manifestPath = env?.manifestPath ?? DEFAULT_MANIFEST_PATH;
-
+export function registerAnnotateTasks(on: CypressPluginOn, _config?: AnnotateSetupConfig): void {
   (on as unknown as TaskRegistrar)('task', {
     annotateScreenshot: ((args: AnnotateTaskArgs) => annotateScreenshot(args)) as unknown as (
       arg: never,
@@ -218,11 +214,4 @@ export function registerAnnotateTasks(on: CypressPluginOn, config?: AnnotateSetu
     appendFailureRecord: ((args: { reportPath: string; record: FailureRecord }) =>
       appendFailureRecord(args)) as unknown as (arg: never) => unknown,
   });
-
-  // Both events only fire under `cypress run`, which is exactly where a job
-  // summary is wanted. In `cypress open` the manifest keeps appending, since
-  // there is no run boundary to reset it at.
-  const runner = on as unknown as RunEventRegistrar;
-  runner('before:run', () => rm(manifestPath, { force: true }));
-  runner('after:run', () => writeStepSummary(manifestPath));
 }
