@@ -1,7 +1,7 @@
 import { appendFile, readFile, rm, writeFile } from 'node:fs/promises';
 import { relative } from 'node:path';
 import { annotateImage, type MeasuredTarget } from '../annotate-image.js';
-import type { AnnotationStyle, PixelRect, ShapeKind } from '../types.js';
+import type { AnnotationStyle, CaptureReport, PixelRect, ShapeKind } from '../types.js';
 import type { DomMeasurement } from './measure-dom.js';
 import { appendFailureRecord, appendRecord, type FailureRecord } from './failure-report.js';
 import { DEFAULT_MANIFEST_PATH } from './config.js';
@@ -17,6 +17,8 @@ import { DEFAULT_MANIFEST_PATH } from './config.js';
 export interface AnnotateTaskArgs {
   screenshotPath: string;
   measurement: DomMeasurement;
+  /** `pixelRatio` and `scaled` from Cypress's `onAfterScreenshot` props. */
+  captureReport?: CaptureReport;
   labels?: (string | undefined)[];
   capture?: 'viewport' | 'fullPage';
   crop?: boolean;
@@ -143,6 +145,7 @@ export async function annotateScreenshot(args: AnnotateTaskArgs): Promise<Annota
     crop: args.crop,
     cropPadding: args.cropPadding,
     style: args.style,
+    captureReport: args.captureReport,
   });
 
   const outPath = args.outPath ?? screenshotPath;

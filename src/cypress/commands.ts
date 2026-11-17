@@ -8,7 +8,7 @@ import {
 import { isFullyVisible, scrollIntoViewIfNeeded } from './scroll-into-view.js';
 import { readAnnotateConfig } from './config.js';
 import type { AnnotateTaskResult } from './task.js';
-import type { AnnotationStyle, ShapeKind } from '../types.js';
+import type { AnnotationStyle, CaptureReport, ShapeKind } from '../types.js';
 
 /**
  * Registers cy.annotate(). Import once from cypress/support/e2e.ts:
@@ -104,6 +104,7 @@ Cypress.Commands.add(
       })
       .then((measurement: DomMeasurement) => {
         let screenshotPath: string | undefined;
+        let captureReport: CaptureReport | undefined;
 
         return cy
           .screenshot(name, {
@@ -112,6 +113,10 @@ Cypress.Commands.add(
             log: false,
             onAfterScreenshot(_el, props) {
               screenshotPath = props.path;
+              // Cypress sets `scaled` at runtime but leaves it out of its types.
+              // Without it, send nothing and let the scale be inferred as before.
+              const scaled = (props as { scaled?: unknown }).scaled;
+              if (typeof scaled === 'boolean') captureReport = { pixelRatio: props.pixelRatio, scaled };
             },
           })
           .then(() => {
@@ -121,6 +126,7 @@ Cypress.Commands.add(
             return cy.task<AnnotateTaskResult>('annotateScreenshot', {
               screenshotPath,
               measurement,
+              captureReport,
               labels,
               capture,
               crop: options.crop ?? defaults.crop,

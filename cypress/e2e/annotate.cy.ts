@@ -137,6 +137,40 @@ describe('cy.annotate', () => {
   });
 });
 
+/**
+ * A viewport larger than the headless window (1280x720 by default) is captured
+ * only up to the window's edge, at full scale. The image is then narrower than
+ * viewport x devicePixelRatio, which used to be read as a resize, and every box
+ * landed at two thirds of its true position on a 2x screen.
+ */
+describe('viewport larger than the browser window', () => {
+  beforeEach(() => {
+    cy.viewport(1920, 1080);
+    cy.visit('/wide-viewport.html');
+  });
+
+  it('keeps the real pixel ratio and lands on the element', () => {
+    cy.annotate('#near', { ...EXACT, label: 'Inside the window', name: 'wide-near' }).then((result) => {
+      cy.window({ log: false }).then((win) => {
+        expect(result.scale, 'scale is devicePixelRatio').to.equal(win.devicePixelRatio);
+      });
+      expect(result.warnings.join(' ')).to.match(/covers only \d+x\d+ CSS px of the 1920x1080 viewport/);
+
+      const rect = result.drawnRects[0];
+      expect(rect!.x / result.scale, 'x in CSS px').to.be.closeTo(200, TOLERANCE_PX);
+      expect(rect!.y / result.scale, 'y in CSS px').to.be.closeTo(150, TOLERANCE_PX);
+      expectBoxOnTarget(result, '#near');
+    });
+  });
+
+  it('skips an element past the edge of the capture instead of drawing it in the wrong place', () => {
+    cy.annotate('#far', { ...EXACT, scrollIntoView: false, name: 'wide-far' }).then((result) => {
+      expect(result.drawnRects, 'no box drawn').to.have.length(0);
+      expect(result.warnings.join(' ')).to.match(/"#far" is outside the captured area/);
+    });
+  });
+});
+
 describe('iframe targets', () => {
   /**
    * The frame carries both a border and padding, because the offset is the

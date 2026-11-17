@@ -3,6 +3,27 @@
 Notable changes to `cypress-annotate`. Each release's section here becomes the
 body of its GitHub release.
 
+## 1.1.0
+
+### Fixed
+
+- Boxes landed up and to the left of the target when the viewport was bigger
+  than the headless browser window. A 1920x1080 viewport in a 1280x720 window
+  produces a screenshot of the viewport's top-left corner at full scale, and the
+  narrow image was taken for a resized one, so on a 2x screen every coordinate
+  came out at two thirds of its true value. `cy.annotate()` and the failure hook
+  now pass Cypress's own `pixelRatio` and `scaled` to the task, and the image
+  width is only used to infer a scale when Cypress says it resized the image.
+- A target outside the captured area is skipped with a warning instead of being
+  drawn somewhere it isn't. A screenshot that covers less than the viewport also
+  gets a warning that says so.
+
+### Added
+
+- `annotateImage()` takes `captureReport: { pixelRatio, scaled }`, and
+  `resolveScale()` takes it as an optional fifth argument, for callers outside
+  Cypress whose capture tool reports the same thing.
+
 ## 1.0.0
 
 The package shipped two products under one name. `cy.annotate()` and the failure

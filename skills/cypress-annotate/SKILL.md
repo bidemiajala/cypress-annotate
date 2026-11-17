@@ -156,6 +156,14 @@ genuinely needed.
 scroll, or click. A rectangle is only valid for the scroll position it was
 measured at. Using `cy.annotate()` rather than hand-rolling this is the point.
 
+**A viewport bigger than the headless window is captured only up to the
+window's edge.** Headless browsers open at 1280x720, so `viewportWidth: 1920`
+gets a screenshot of the viewport's top-left 1280x720 corner. The box still lands
+in the right place, but anything past that corner has no box and a warning in
+`annotations.json`. Size the window to match in `before:browser:launch`, with
+`--window-size=1920,1080` for Chrome or `launchOptions.preferences.width` and
+`height` for Electron.
+
 **Exact-colour assertions fail on macOS Electron.** Its capture applies a
 colour-profile shift, so `#FF00E4` comes back as `rgb(234,51,221)`. Sample the
 colour from the image rather than trusting the stylesheet.

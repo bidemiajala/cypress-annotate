@@ -8,6 +8,7 @@ import {
 } from './draw.js';
 import type {
   AnnotationStyle,
+  CaptureReport,
   CssRect,
   PageMetrics,
   PixelRect,
@@ -50,6 +51,12 @@ export interface AnnotateImageOptions {
   /** Context to keep around the target when cropping, CSS px. Default 40. */
   cropPadding?: number;
   style?: AnnotationStyle;
+  /**
+   * What the capturing tool reported about the image. Without it, the scale is
+   * inferred from the image width, which cannot tell a resized image from one
+   * the browser window cut short.
+   */
+  captureReport?: CaptureReport;
 }
 
 export interface AnnotateImageResult {
@@ -60,6 +67,7 @@ export interface AnnotateImageResult {
   height: number;
   /** Image pixels per CSS pixel actually used. */
   scale: number;
+  /** One per target that landed in the image. A target outside it is skipped, with a warning. */
   drawnRects: PixelRect[];
   warnings: string[];
 }
@@ -135,13 +143,21 @@ function clampRect(rect: PixelRect, width: number, height: number): PixelRect {
  * screenshots to keep them cheap to send, and a capture that has been resized
  * behind your back is exactly what makes a box drift. So the image is measured
  * and the reported ratio is treated as a hint.
+ *
+ * A narrow image has a second explanation, though. A headless browser window
+ * smaller than the viewport captures only its top-left corner, at full scale,
+ * and width alone cannot tell that apart from a resize. So when the capturing
+ * tool says the image was not resized, its pixel ratio wins.
  */
 export function resolveScale(
   imageWidth: number,
   cssWidth: number,
   devicePixelRatio: number,
   warnings: string[],
+  report?: CaptureReport,
 ): number {
+  if (report && !report.scaled && report.pixelRatio > 0) return report.pixelRatio;
+
   if (cssWidth <= 0) {
     warnings.push('Page metrics reported a zero-width viewport; falling back to devicePixelRatio.');
     return devicePixelRatio;
@@ -187,8 +203,21 @@ export async function annotateImage(
   if (imageWidth === 0 || imageHeight === 0) throw new Error('Could not read the screenshot dimensions.');
 
   const cssWidth = fullPage ? metrics.documentWidth : metrics.viewportWidth;
-  const scale = resolveScale(imageWidth, cssWidth, metrics.devicePixelRatio, warnings);
+  const cssHeight = fullPage ? metrics.documentHeight : metrics.viewportHeight;
+  const scale = resolveScale(imageWidth, cssWidth, metrics.devicePixelRatio, warnings, options.captureReport);
 
+  // The CSS area the image actually holds, from its own top-left corner.
+  const coveredWidth = imageWidth / scale;
+  const coveredHeight = imageHeight / scale;
+  if (coveredWidth < cssWidth - 1 || coveredHeight < cssHeight - 1) {
+    warnings.push(
+      `Screenshot covers only ${Math.round(coveredWidth)}x${Math.round(coveredHeight)} CSS px of the ` +
+        `${Math.round(cssWidth)}x${Math.round(cssHeight)} ${fullPage ? 'page' : 'viewport'}, which usually ` +
+        `means the browser window is smaller than the viewport. Size the window to match in before:browser:launch.`,
+    );
+  }
+
+  const placed: { target: MeasuredTarget; rect: PixelRect }[] = [];
   for (const target of targets) {
     const name = target.describe ?? 'target';
     if (target.viewportRect.width === 0 || target.viewportRect.height === 0) {
@@ -200,13 +229,22 @@ export async function annotateImage(
           `annotated where it was painted.`,
       );
     }
-  }
 
-  const sourceRects = targets.map((target) => {
-    const style = resolveStyle(options.style, target.style);
     const base = fullPage ? documentRectOf(target, metrics) : target.viewportRect;
-    return scaleRect(inflate(base, style.padding), scale);
-  });
+    const right = base.x + base.width;
+    const bottom = base.y + base.height;
+    if (base.x >= coveredWidth || base.y >= coveredHeight || right <= 0 || bottom <= 0) {
+      warnings.push(`${name} is outside the captured area, so no box was drawn for it.`);
+      continue;
+    }
+    if (base.x < 0 || base.y < 0 || right > coveredWidth || bottom > coveredHeight) {
+      warnings.push(`${name} runs past the edge of the captured area; its box is clipped.`);
+    }
+
+    const style = resolveStyle(options.style, target.style);
+    placed.push({ target, rect: scaleRect(inflate(base, style.padding), scale) });
+  }
+  const sourceRects = placed.map((p) => p.rect);
 
   let finalImage = screenshot;
   let finalWidth = imageWidth;
@@ -214,7 +252,7 @@ export async function annotateImage(
   let originX = 0;
   let originY = 0;
 
-  if (options.crop) {
+  if (options.crop && sourceRects.length > 0) {
     const pad = (options.cropPadding ?? 40) * scale;
     const union = sourceRects.reduce<PixelRect>(
       (acc, r) => {
@@ -250,7 +288,7 @@ export async function annotateImage(
   const drawnRects = sourceRects.map((r) => ({ ...r, x: r.x - originX, y: r.y - originY }));
 
   const specs: DrawSpec[] = drawnRects.map((rect, i) => {
-    const target = targets[i];
+    const target = placed[i]?.target;
     const style = resolveStyle(options.style, target?.style);
     return {
       rect,
@@ -260,7 +298,12 @@ export async function annotateImage(
     };
   });
 
-  const image = await compositeOverlay(finalImage, buildOverlaySvg(finalWidth, finalHeight, specs));
+  // Nothing landed in the image, so leave it untouched. Dimming everything
+  // outside zero boxes would only darken the whole screenshot.
+  const image =
+    specs.length > 0
+      ? await compositeOverlay(finalImage, buildOverlaySvg(finalWidth, finalHeight, specs))
+      : finalImage;
 
   return {
     image,

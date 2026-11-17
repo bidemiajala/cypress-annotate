@@ -49,7 +49,7 @@ say so explicitly, and they mean it.
 
 ```bash
 npm run typecheck
-npm run test:cypress            # 12 cases, real Cypress
+npm run test:cypress            # 14 cases, real Cypress
 npm run test:cypress-failures   # 4 cases end to end, real Cypress
 npm run test:failure-selector   # 12 cases, no browser
 npm run test:svg-escaping       # 9 cases
