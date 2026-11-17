@@ -5,7 +5,7 @@ import { isFullyVisible, scrollIntoViewIfNeeded } from './scroll-into-view.js';
 import { readAnnotateConfig, DEFAULT_REPORT_PATH } from './config.js';
 import type { AnnotateTaskResult } from './task.js';
 import type { FailureRecord } from './failure-report.js';
-import type { AnnotationStyle, PageMetrics } from '../types.js';
+import type { AnnotationStyle, CaptureReport, PageMetrics } from '../types.js';
 import type { MeasuredDomTarget } from './measure-dom.js';
 
 export interface FailureCaptureOptions {
@@ -121,6 +121,7 @@ export function registerFailureCapture(options: FailureCaptureOptions = {}): voi
       .then((win) => prepare(win))
       .then(({ target, resolved, inventory, metrics }) => {
         let screenshotPath: string | undefined;
+        let captureReport: CaptureReport | undefined;
 
         return cy
           .screenshot(name, {
@@ -129,6 +130,10 @@ export function registerFailureCapture(options: FailureCaptureOptions = {}): voi
             log: false,
             onAfterScreenshot(_el, props) {
               screenshotPath = props.path;
+              // Cypress sets `scaled` at runtime but leaves it out of its types.
+              // Without it, send nothing and let the scale be inferred as before.
+              const scaled = (props as { scaled?: unknown }).scaled;
+              if (typeof scaled === 'boolean') captureReport = { pixelRatio: props.pixelRatio, scaled };
             },
           })
           .then(() => {
@@ -144,6 +149,7 @@ export function registerFailureCapture(options: FailureCaptureOptions = {}): voi
             return cy.task('annotateScreenshot', {
               screenshotPath,
               measurement: { metrics, targets: [target!] },
+              captureReport,
               labels: [label],
               capture: 'viewport',
               style: { ...defaults.style, ...options.style },

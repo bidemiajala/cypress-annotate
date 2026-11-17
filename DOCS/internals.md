@@ -77,7 +77,7 @@ Playwright pipeline they were written for.
 
 ```bash
 npm install
-npm run test:cypress            # cy.annotate and theming, 12 cases, real Cypress 15
+npm run test:cypress            # cy.annotate and theming, 14 cases, real Cypress 15
 npm run test:cypress-failures   # failed-test capture end to end, 4 cases, real Cypress 15
 npm run test:failure-selector   # failed-test selector recovery, 12 cases, no browser
 npm run test:svg-escaping       # SVG injection regression suite, 9 cases

@@ -1,0 +1,16 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>wide viewport</title>
+<style>
+  body { margin: 0; background: #f4f5f7; }
+  /* Flat colours so the suite can scan for the painted footprint. #near sits
+     inside a 1280x720 headless window, #far sits past its right edge. */
+  #near { position: absolute; left: 200px; top: 150px; width: 240px; height: 80px; background: #FF00AA; }
+  #far  { position: absolute; left: 1500px; top: 150px; width: 240px; height: 80px; background: #00C853; }
+</style>
+</head>
+<body>
+  <div id="near"></div>
+  <div id="far"></div>
+</body>
+</html>

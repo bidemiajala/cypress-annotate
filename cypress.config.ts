@@ -25,6 +25,7 @@ export default defineConfig({
   },
   viewportWidth: 1280,
   // Matches the headless Electron window, so the capture is not clipped.
+  // Chrome needs a taller window for the same capture, set below.
   viewportHeight: 720,
   video: false,
   screenshotsFolder: 'out/cypress/screenshots',
@@ -41,6 +42,18 @@ export default defineConfig({
     async setupNodeEvents(on, config) {
       // The plugin itself: one call is the whole Node-side setup.
       registerAnnotateTasks(on, config);
+
+      // Headless Chrome keeps 87px of its window for browser UI it never
+      // draws, so Cypress's own 1280x720 window captures only 1280x633 and cuts
+      // off the bottom of the viewport. The engine warns about that and skips
+      // anything below the cut, so the window is made tall enough to hold it.
+      on('before:browser:launch', (browser, launchOptions) => {
+        if (browser.family === 'chromium' && browser.name !== 'electron' && browser.isHeadless) {
+          launchOptions.args = launchOptions.args.filter((arg: string) => !arg.startsWith('--window-size='));
+          launchOptions.args.push(`--window-size=${config.viewportWidth},${config.viewportHeight + 87}`);
+        }
+        return launchOptions;
+      });
 
       // Everything below is this repo's own test rig, not part of the plugin.
       const { url } = await startStaticServer(join(config.projectRoot, 'fixtures'));

@@ -28,6 +28,17 @@ export interface PageMetrics {
   documentHeight: number;
 }
 
+/**
+ * What the tool that took the screenshot says about it. Cypress hands this to
+ * `onAfterScreenshot` as `props.pixelRatio` and `props.scaled`.
+ */
+export interface CaptureReport {
+  /** Image pixels per CSS pixel at capture time. */
+  pixelRatio: number;
+  /** Whether the image was resized after capture. */
+  scaled: boolean;
+}
+
 export type ShapeKind = 'box' | 'circle' | 'arrow';
 
 export interface AnnotationStyle {
