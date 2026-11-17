@@ -162,7 +162,10 @@ gets a screenshot of the viewport's top-left 1280x720 corner. The box still land
 in the right place, but anything past that corner has no box and a warning in
 `annotations.json`. Size the window to match in `before:browser:launch`, with
 `--window-size=1920,1080` for Chrome or `launchOptions.preferences.width` and
-`height` for Electron.
+`height` for Electron. Headless Chrome also keeps 87px of its window height for
+UI it never draws, so its default 1280x720 window captures only 1280x633, which
+cuts the bottom off even Cypress's default 1000x660 viewport. Make the Chrome
+window 87px taller than the viewport.
 
 **Exact-colour assertions fail on macOS Electron.** Its capture applies a
 colour-profile shift, so `#FF00E4` comes back as `rgb(234,51,221)`. Sample the

@@ -17,6 +17,17 @@ body of its GitHub release.
 - A target outside the captured area is skipped with a warning instead of being
   drawn somewhere it isn't. A screenshot that covers less than the viewport also
   gets a warning that says so.
+- Headless Chrome keeps 87px of its window for UI it never draws, so a default
+  1280x720 window captures 1280x633. The new warning caught this in the repo's
+  own Chrome run, where one target in a multi-target case had been drawn off the
+  bottom of the image. The test config now sizes the window to fit, and the
+  skill's traps section explains how to do the same.
+
+### Security
+
+- `sharp` now needs 0.35.5 or later. Earlier versions bundle a librsvg affected
+  by CVE-2026-96889 ([GHSA-wq5f-xc86-pv6w](https://github.com/advisories/GHSA-wq5f-xc86-pv6w)),
+  and librsvg is what renders the overlay.
 
 ### Added
 
