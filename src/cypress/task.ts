@@ -65,6 +65,21 @@ export interface AnnotateTaskResult {
 }
 
 /**
+ * What the failure hook's tasks return in place of throwing. A task that throws
+ * fails the cy.task that called it, and inside the hook's afterEach that skips
+ * the rest of the spec.
+ */
+export type SoftResult<T> = { result: T } | { error: string };
+
+async function soft<T>(work: () => Promise<T>): Promise<SoftResult<T>> {
+  try {
+    return { result: await work() };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+/**
  * Manifest paths already written to by this process. Cypress runs the whole of
  * `cypress run` in one Node process, so "first write of the process" is the
  * run boundary, and using it means no before:run handler is needed to clear
@@ -214,7 +229,12 @@ export function registerAnnotateTasks(on: CypressPluginOn, _config?: AnnotateSet
     annotateScreenshot: ((args: AnnotateTaskArgs) => annotateScreenshot(args)) as unknown as (
       arg: never,
     ) => unknown,
+    // The failure hook's two tasks never throw. cy.annotate() keeps the one
+    // above, which does, because an explicit call should fail loudly.
+    annotateScreenshotSoft: ((args: AnnotateTaskArgs) => soft(() => annotateScreenshot(args))) as unknown as (
+      arg: never,
+    ) => unknown,
     appendFailureRecord: ((args: { reportPath: string; record: FailureRecord }) =>
-      appendFailureRecord(args)) as unknown as (arg: never) => unknown,
+      soft(() => appendFailureRecord(args))) as unknown as (arg: never) => unknown,
   });
 }

@@ -141,6 +141,10 @@ Where no selector can be recovered, such as an existence check or a
 of candidate elements, since the browser session is gone by the time anyone reads
 the report.
 
+The hook can't fail the run. If annotating or writing the report goes wrong, the
+plain screenshot is kept, the reason goes into the Cypress log and the record's
+`warnings`, and the next test runs as normal.
+
 ## Traps
 
 **Don't use `fullPage: true` casually.** Cypress builds a full-page screenshot by

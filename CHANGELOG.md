@@ -3,6 +3,29 @@
 Notable changes to `cypress-annotate`. Each release's section here becomes the
 body of its GitHub release.
 
+## 1.2.0
+
+### Fixed
+
+- The failure hook could fail its own `afterEach`, and Cypress then skips every
+  remaining test in the spec. A failing `cy.task` did it, whether annotating
+  threw or the report could not be written, and so did a `cy.get` that waited
+  out the whole command timeout when the page re-rendered between measuring and
+  scrolling. Each step now fails softly: the plain screenshot is kept, the
+  reason goes into the Cypress log and the record's `warnings`, and the next
+  test runs. A `fail` handler scoped to the hook catches anything else.
+- The hook scrolls a below-the-fold element synchronously, on the element it
+  just measured, instead of querying for it again. It also honours
+  `scrollOffset` from `env.annotate` now, which it used to ignore.
+
+### Added
+
+- A task named `annotateScreenshotSoft`, registered by `registerAnnotateTasks`
+  alongside the existing one. It returns `{ result }` or `{ error }` and never
+  throws. `appendFailureRecord` now returns the same shape. `cy.annotate()`
+  still uses `annotateScreenshot`, which throws, because an explicit call should
+  fail loudly.
+
 ## 1.1.0
 
 ### Fixed

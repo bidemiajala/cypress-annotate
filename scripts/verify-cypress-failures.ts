@@ -45,7 +45,8 @@ async function main(): Promise<void> {
   }
   const records = JSON.parse(raw) as FailureRecord[];
 
-  check('exactly 4 failures recorded', records.length === 4, `got ${records.length}`);
+  // Eight tests fail. One of them breaks the report write, so it leaves none.
+  check('exactly 7 failures recorded', records.length === 7, `got ${records.length}`);
 
   const diffable = findRecord(records, 'diffable assertion');
   check('diffable case: found', Boolean(diffable));
@@ -90,6 +91,37 @@ async function main(): Promise<void> {
     check('unrecoverable: not resolved', unrecoverable.resolved === false);
     check('unrecoverable: falls back to inventory anyway', Array.isArray(unrecoverable.inventory) && unrecoverable.inventory.length > 0);
   }
+
+  const belowFold = findRecord(records, 'below the fold');
+  check('below-fold case: found', Boolean(belowFold));
+  if (belowFold) {
+    const { metrics, drawnRect } = belowFold;
+    check('below-fold: resolved', belowFold.resolved === true);
+    check('below-fold: page was scrolled to it', metrics.scrollY > 0, `scrollY ${metrics.scrollY}`);
+    const imageHeight = metrics.viewportHeight * metrics.devicePixelRatio;
+    check(
+      'below-fold: box lands inside the screenshot',
+      drawnRect !== null && drawnRect.y >= 0 && drawnRect.y + drawnRect.height <= imageHeight,
+      JSON.stringify(drawnRect),
+    );
+  }
+
+  const annotateThrew = findRecord(records, 'annotating throws');
+  check('annotate-throws case: still recorded', Boolean(annotateThrew));
+  if (annotateThrew) {
+    check('annotate-throws: no annotated path', annotateThrew.annotatedPath === null);
+    check(
+      'annotate-throws: warning says why',
+      annotateThrew.warnings.some((w) => w.startsWith('Annotating the screenshot failed') && w.includes('ENOTDIR')),
+      JSON.stringify(annotateThrew.warnings),
+    );
+  }
+
+  check('report-throws case: nothing recorded, as expected', !findRecord(records, 'report throws'));
+  check(
+    'the spec kept running after the hook went wrong',
+    Boolean(findRecord(records, 'next failure is still captured')),
+  );
 
   console.log(`\n${passed}/${passed + failed} checks passed.\n`);
   process.exit(failed === 0 ? 0 : 1);
