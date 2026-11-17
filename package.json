@@ -1,6 +1,6 @@
 {
   "name": "cypress-annotate",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Draw a box on exactly what failed. Every failed Cypress test gets an annotated screenshot, in CI, with no AI and no browser download.",
   "keywords": [
     "cypress",

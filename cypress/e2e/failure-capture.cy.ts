@@ -26,3 +26,41 @@ describe('failure capture', () => {
     expect(2).to.equal(3);
   });
 });
+
+/**
+ * The hook runs in an afterEach, and a failing afterEach makes Cypress skip
+ * every remaining test in the spec. These break the hook's own steps on
+ * purpose. The last test only produces a record if the spec kept going.
+ */
+describe('failure capture that goes wrong itself', () => {
+  const projectDefaults = Cypress.env('annotate') as Record<string, unknown> | undefined;
+
+  // Restored before each test, because the hook reads env after the test ends
+  // and a describe-level afterEach would run before it.
+  beforeEach(() => {
+    Cypress.env('annotate', projectDefaults);
+  });
+
+  it('a failing element below the fold', () => {
+    cy.visit('/test-page.html');
+    cy.get('#target-below-fold').should('have.class', 'NOPE');
+  });
+
+  it('annotating throws inside the task', () => {
+    // A path under a file, so the manifest write fails with ENOTDIR.
+    Cypress.env('annotate', { ...projectDefaults, manifestPath: 'package.json/annotations.json' });
+    cy.visit('/buggy-checkout.html');
+    cy.get('#grand-total-value').should('have.text', 'ANNOTATE WILL THROW');
+  });
+
+  it('writing the failure report throws', () => {
+    Cypress.env('annotate', { ...projectDefaults, reportPath: 'package.json/failures.json' });
+    cy.visit('/buggy-checkout.html');
+    cy.get('#grand-total-value').should('have.text', 'REPORT WILL THROW');
+  });
+
+  it('the next failure is still captured', () => {
+    cy.visit('/buggy-checkout.html');
+    cy.get('#promo-apply').should('contain', 'STILL RUNNING');
+  });
+});
